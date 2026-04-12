@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CVEN Central</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
-
   :root {
     --bg: #f0f1f3;
     --surface: #ffffff;
@@ -15,16 +15,13 @@
     --text: #1a1b22;
     --text-mid: #4a4b58;
     --text-muted: #8a8b98;
-    --accent-nextgm: #2d6a30;
-    --accent-xoi: #2a4a8a;
-    --accent-cmd: #7a3a8a;
     --radius: 12px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Barlow', sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -36,7 +33,6 @@
     padding: 48px 24px 80px;
   }
 
-  /* Header */
   .header {
     display: flex;
     align-items: baseline;
@@ -45,14 +41,13 @@
   }
 
   .header h1 {
-    font-family: 'JetBrains Mono', monospace;
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.5px;
   }
 
   .header .tag {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Barlow Condensed', sans-serif;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 1px;
@@ -70,10 +65,7 @@
     line-height: 1.5;
   }
 
-  /* Project sections */
-  .project {
-    margin-bottom: 32px;
-  }
+  .project { margin-bottom: 32px; }
 
   .project-header {
     display: flex;
@@ -84,17 +76,10 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .project-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-
   .project-name {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Barlow Condensed', sans-serif;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.5px;
     text-transform: uppercase;
   }
@@ -105,7 +90,6 @@
     margin-left: auto;
   }
 
-  /* Tool cards */
   .tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -131,10 +115,7 @@
     box-shadow: 0 4px 16px rgba(0,0,0,0.06);
   }
 
-  .tool-card .tool-name {
-    font-size: 14px;
-    font-weight: 600;
-  }
+  .tool-card .tool-name { font-size: 14px; font-weight: 600; }
 
   .tool-card .tool-desc {
     font-size: 12px;
@@ -143,21 +124,19 @@
   }
 
   .tool-card .tool-path {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Barlow Condensed', sans-serif;
     font-size: 10px;
     color: var(--text-muted);
     margin-top: 4px;
     opacity: 0.6;
+    letter-spacing: 0.3px;
   }
 
-  .tool-card.coming-soon {
-    opacity: 0.45;
-    pointer-events: none;
-  }
+  .tool-card.coming-soon { opacity: 0.45; pointer-events: none; }
 
   .tool-card.coming-soon .tool-name::after {
     content: 'soon';
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Barlow Condensed', sans-serif;
     font-size: 9px;
     font-weight: 500;
     letter-spacing: 0.5px;
@@ -170,16 +149,17 @@
     vertical-align: middle;
   }
 
-  /* Footer */
   .footer {
     margin-top: 48px;
     padding-top: 20px;
     border-top: 1px solid var(--border);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Barlow Condensed', sans-serif;
     font-size: 10px;
     color: var(--text-muted);
     display: flex;
     justify-content: space-between;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 
   @media (max-width: 600px) {
@@ -198,10 +178,8 @@
   </div>
   <p class="subtitle">Civil Engine tools and project utilities.</p>
 
-  <!-- NextGM -->
   <div class="project">
     <div class="project-header">
-      <div class="project-dot" style="background: var(--accent-nextgm)"></div>
       <span class="project-name">NextGM</span>
       <span class="project-desc">Football GM simulation</span>
     </div>
@@ -224,10 +202,8 @@
     </div>
   </div>
 
-  <!-- XOI -->
   <div class="project">
     <div class="project-header">
-      <div class="project-dot" style="background: var(--accent-xoi)"></div>
       <span class="project-name">XOI</span>
       <span class="project-desc">NFL analytics platform</span>
     </div>
@@ -245,10 +221,8 @@
     </div>
   </div>
 
-  <!-- Command Center -->
   <div class="project">
     <div class="project-header">
-      <div class="project-dot" style="background: var(--accent-cmd)"></div>
       <span class="project-name">Studio</span>
       <span class="project-desc">Cross-project operations</span>
     </div>
@@ -257,6 +231,11 @@
         <span class="tool-name">Command Center</span>
         <span class="tool-desc">Project tracker, sprint management, and documentation hub.</span>
         <span class="tool-path">command.visceral.cc</span>
+      </a>
+      <a href="/central/sync/" class="tool-card">
+        <span class="tool-name">Sync Status</span>
+        <span class="tool-desc">Git repo status across MacBook Pro and Mac Mini. One-glance view of what's clean, behind, or dirty.</span>
+        <span class="tool-path">/central/sync</span>
       </a>
     </div>
   </div>

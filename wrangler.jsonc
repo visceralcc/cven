@@ -1,9 +1,15 @@
 {
-  "name": "cven-cc",
-  "main": "src/index.js",
-  "compatibility_date": "2026-04-12",
-  "assets": {
-    "directory": "./public",
-    "binding": "ASSETS"
-  }
+	"name": "cven-cc",
+	"main": "src/index.js",
+	"compatibility_date": "2026-04-12",
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SYNC_STATUS",
+			"id": "d582f83dc546466ca9653712d6efffdd"
+		}
+	]
 }

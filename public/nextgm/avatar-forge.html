@@ -1127,7 +1127,6 @@
     const useRefs = document.getElementById('useStyleRefs').checked;
 
     const submitBody = {
-      action: 'submit',
       model,
       prompt,
       image_size: imageSize,
@@ -1148,53 +1147,20 @@
       submitBody.guidance_scale = 3.5;
     }
 
-    const submitRes = await fetch('/api/fal', {
+    const res = await fetch('/api/fal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(submitBody),
       signal,
     });
 
-    if (!submitRes.ok) {
-      const err = await submitRes.text();
-      throw new Error(`API ${submitRes.status}: ${err}`);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`API ${res.status}: ${err}`);
     }
 
-    const { request_id } = await submitRes.json();
-
-    let attempts = 0;
-    while (attempts < 120) {
-      if (signal.aborted) throw new Error('Aborted');
-      await new Promise(r => setTimeout(r, 1000));
-
-      const statusRes = await fetch('/api/fal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'status', model, request_id }),
-        signal,
-      });
-
-      const statusData = await statusRes.json();
-
-      if (statusData.status === 'COMPLETED') {
-        const resultRes = await fetch('/api/fal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'result', model, request_id }),
-          signal,
-        });
-        const result = await resultRes.json();
-        return result.images[0].url;
-      }
-
-      if (statusData.status === 'FAILED') {
-        throw new Error('Generation failed on server');
-      }
-
-      attempts++;
-    }
-
-    throw new Error('Timeout waiting for result');
+    const result = await res.json();
+    return result.images[0].url;
   }
 
   // ─── Generation Engine ─────────────────────────────
