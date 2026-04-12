@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextGM Avatar Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #ecedf0;
+    --surface: #f5f5f7;
+    --surface-2: #e4e5e9;
+    --surface-3: #d8d9de;
+    --border: #c8c9d0;
+    --border-hover: #a8a9b2;
+    --text: #1a1a24;
+    --text-dim: #505068;
+    --text-muted: #80809a;
+    --accent: #3a7d20;
+    --accent-dim: #4a9928;
+    --danger: #c83030;
+    --warning: #b88a20;
+    --success: #2a8a4a;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Layout */
+  .app {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+
+  .logo span { color: var(--text-dim); font-weight: 400; }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.5s ease infinite; }
+  .status-dot.error { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cost-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .cost-badge strong { color: var(--accent); }
+
+  /* Sidebar / Config Panel */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+
+  .field input, .field select, .field textarea {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent-dim);
+  }
+
+  .field textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .field .hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Model selector */
+  .model-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .model-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .model-option:hover { border-color: var(--border-hover); }
+  .model-option.selected { border-color: var(--accent-dim); background: rgba(58, 125, 32, 0.06); }
+
+  .model-option input { display: none; }
+
+  .model-radio {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .model-option.selected .model-radio {
+    border-color: var(--accent);
+  }
+
+  .model-option.selected .model-radio::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .model-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .model-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .model-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Prompt matrix */
+  .matrix-section {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+
+  .tag-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  .tag {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    background: var(--surface-3);
+    color: var(--text-dim);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tag:hover { border-color: var(--border-hover); color: var(--text); }
+  .tag.active { background: rgba(58, 125, 32, 0.12); border-color: var(--accent-dim); color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    width: 100%;
+  }
+
+  .btn-primary:hover { background: #4a9928; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: var(--surface-3);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover { border-color: var(--border-hover); }
+
+  .btn-danger {
+    background: rgba(200, 48, 48, 0.08);
+    color: var(--danger);
+    border: 1px solid rgba(200, 48, 48, 0.2);
+  }
+
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  /* Main content */
+  .main {
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Progress bar */
+  .progress-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .progress-title {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .progress-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 16px;
+  }
+
+  .progress-track {
+    height: 6px;
+    background: var(--surface-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px rgba(58, 125, 32, 0.3);
+  }
+
+  .progress-fill.error { background: var(--danger); box-shadow: 0 0 12px rgba(245, 74, 74, 0.3); }
+
+  /* Grid */
+  .grid-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .grid-controls-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .image-cell {
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .image-cell:hover { border-color: var(--border-hover); transform: scale(1.02); }
+
+  .image-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .image-cell .cell-index {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+
+  .image-cell.generating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image-cell.generating::after {
+    content: '';
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .image-cell.error { border-color: rgba(245, 74, 74, 0.3); }
+  .image-cell.error::after {
+    content: '!';
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Log panel */
+  .log-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .log-header h3 {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .log-content {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--text-dim);
+  }
+
+  .log-content .log-line { white-space: pre-wrap; word-break: break-all; }
+  .log-content .log-line.error { color: var(--danger); }
+  .log-content .log-line.success { color: var(--success); }
+  .log-content .log-line.info { color: var(--text-muted); }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 40px;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .empty-state .icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .empty-state h2 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    color: var(--text-dim);
+    max-width: 360px;
+    line-height: 1.6;
+  }
+
+  /* Preview modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    max-width: 540px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .modal-preview img {
+    width: 100%;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+  }
+
+  .modal-prompt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 12px;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      max-height: 50vh;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">NEXTGM <span>/ avatar forge</span></div>
+    </div>
+    <div class="header-right">
+      <div class="cost-badge">est. cost: <strong id="costEstimate">$0.00</strong></div>
+      <div class="header-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">idle</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+
+
+    <div>
+      <div class="section-label">Model</div>
+      <div class="model-options">
+        <label class="model-option selected" data-model="fal-ai/flux/schnell">
+          <input type="radio" name="model" value="fal-ai/flux/schnell" checked />
+          <div class="model-radio"></div>
+          <div class="model-info">
+            <div class="model-name">FLUX.1 Schnell</div>
+            <div class="model-meta">~$0.003/img · fastest</div>
+          </div>
+        </label>
+        <label class="model-option" data-model="fal-ai/flux/dev">
+          <input type="radio" name="model" value="fal-ai/flux/dev" />
+          <div class="model-radio"></div>
+          <div class="model-info">
+            <div class="model-name">FLUX.1 Dev</div>
+            <div class="model-meta">~$0.025/img · higher quality</div>
+          </div>
+        </label>
+        <label class="model-option" data-model="fal-ai/flux-2/pro">
+          <input type="radio" name="model" value="fal-ai/flux-2/pro" />
+          <div class="model-radio"></div>
+          <div class="model-info">
+            <div class="model-name">FLUX 2 Pro</div>
+            <div class="model-meta">~$0.03/img · best quality</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Generation Settings</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Batch Size</label>
+          <input type="number" id="batchSize" value="10" min="1" max="100" />
+        </div>
+        <div class="field">
+          <label>Concurrency</label>
+          <input type="number" id="concurrency" value="3" min="1" max="10" />
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>Image Size</label>
+        <select id="imageSize">
+          <option value="square_hd">512×512 (Square HD)</option>
+          <option value="square">512×512 (Square)</option>
+          <option value="portrait_4_3">Portrait 3:4</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="matrix-section">
+      <div class="section-label">Style Template</div>
+      <div class="field">
+        <label>Base Prompt</label>
+        <textarea id="basePrompt">Digital illustration portrait of a {ethnicity} American football player, age {age}, {hairstyle}, {facial_hair}, {accessories}, {build}, wearing a plain neutral brown-gray crew neck t-shirt over a white undershirt, {expression}, {skin_tone}, stylized semi-realistic cartoon art style with bold outlines, cell-shaded coloring, slight caricature proportions with strong jaw, white clean background, head and upper chest visible, front-facing portrait</textarea>
+        <div class="hint">Use {ethnicity}, {age}, {hairstyle}, {facial_hair}, {accessories}, {build}, {expression}, {skin_tone} as variables</div>
+      </div>
+    </div>
+
+    <div class="matrix-section">
+      <div class="section-label">Variation Matrix</div>
+
+      <div class="field">
+        <label>Ethnicities</label>
+        <div class="tag-group" id="tagEthnicity">
+          <span class="tag active" data-val="Black">Black</span>
+          <span class="tag active" data-val="White">White</span>
+          <span class="tag active" data-val="Hispanic Latino">Hispanic</span>
+          <span class="tag active" data-val="Polynesian Samoan">Polynesian</span>
+          <span class="tag active" data-val="Asian">Asian</span>
+          <span class="tag active" data-val="mixed-race biracial">Mixed</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Hairstyles</label>
+        <div class="tag-group" id="tagHairstyle">
+          <span class="tag active" data-val="buzz cut hair">buzz cut</span>
+          <span class="tag active" data-val="short cropped hair">short crop</span>
+          <span class="tag active" data-val="medium-length wavy hair">wavy</span>
+          <span class="tag active" data-val="long dreadlocks">dreads</span>
+          <span class="tag active" data-val="cornrow braids">cornrows</span>
+          <span class="tag active" data-val="large afro hairstyle">afro</span>
+          <span class="tag active" data-val="completely bald shaved head">bald</span>
+          <span class="tag active" data-val="man bun with undercut">man bun</span>
+          <span class="tag active" data-val="fade haircut">fade</span>
+          <span class="tag active" data-val="short spiky hair">spiky</span>
+          <span class="tag active" data-val="blonde crop hair">blonde crop</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Facial Hair</label>
+        <div class="tag-group" id="tagFacialHair">
+          <span class="tag active" data-val="clean-shaven no facial hair">clean</span>
+          <span class="tag active" data-val="light stubble beard">stubble</span>
+          <span class="tag active" data-val="thick full beard">full beard</span>
+          <span class="tag active" data-val="trimmed goatee">goatee</span>
+          <span class="tag active" data-val="thin mustache">mustache</span>
+          <span class="tag active" data-val="salt-and-pepper gray-flecked goatee">salt & pepper</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Accessories</label>
+        <div class="tag-group" id="tagAccessories">
+          <span class="tag active" data-val="no earrings or accessories">none</span>
+          <span class="tag active" data-val="small black stud earrings">studs</span>
+          <span class="tag active" data-val="small gold hoop earrings">hoops</span>
+          <span class="tag active" data-val="diamond stud earrings">diamonds</span>
+          <span class="tag active" data-val="one small hoop earring">single hoop</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="btn btn-primary" id="btnGenerate" onclick="startGeneration()">Generate Batch</button>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-secondary btn-sm" style="flex:1" onclick="pauseGeneration()" id="btnPause" disabled>Pause</button>
+      <button class="btn btn-danger btn-sm" style="flex:1" onclick="stopGeneration()" id="btnStop" disabled>Stop</button>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="downloadAll()" id="btnDownload" disabled>Download All as ZIP</button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main" id="mainContent">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">🏈</div>
+      <h2>Avatar Forge</h2>
+      <p>Configure your prompt matrix on the left, set your batch size, and hit Generate to start creating player avatars.</p>
+      <p style="margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted)">
+        FLUX Schnell: ~$0.003/image<br>
+        2,700 avatars ≈ $8–$12
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-preview"><img id="modalImg" src="" /></div>
+    <div class="modal-prompt" id="modalPrompt"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" onclick="downloadSingle()">Download</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── State ──────────────────────────────────────────
+  let state = {
+    running: false,
+    paused: false,
+    generated: [],       // {url, prompt, index, blob}
+    errors: [],
+    total: 0,
+    completed: 0,
+    failed: 0,
+    abortController: null,
+    currentModalIndex: -1,
+  };
+
+  const PRICE_MAP = {
+    'fal-ai/flux/schnell': 0.003,
+    'fal-ai/flux/dev': 0.025,
+    'fal-ai/flux-2/pro': 0.03,
+  };
+
+  // ─── Helpers ────────────────────────────────────────
+  function getActiveTags(id) {
+    return [...document.querySelectorAll(`#${id} .tag.active`)].map(t => t.dataset.val);
+  }
+
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function getModel() {
+    return document.querySelector('input[name="model"]:checked').value;
+  }
+
+  function updateCostEstimate() {
+    const batch = parseInt(document.getElementById('batchSize').value) || 0;
+    const price = PRICE_MAP[getModel()] || 0.003;
+    document.getElementById('costEstimate').textContent = `$${(batch * price).toFixed(2)}`;
+  }
+
+  // ─── Tag toggles ───────────────────────────────────
+  document.querySelectorAll('.tag-group .tag').forEach(tag => {
+    tag.addEventListener('click', () => tag.classList.toggle('active'));
+  });
+
+  // ─── Model selector ────────────────────────────────
+  document.querySelectorAll('.model-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input').checked = true;
+      updateCostEstimate();
+    });
+  });
+
+  document.getElementById('batchSize').addEventListener('input', updateCostEstimate);
+  updateCostEstimate();
+
+  // ─── Build Prompts ─────────────────────────────────
+  const AGES = ['21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38'];
+  const BUILDS = [
+    'lean athletic neck',
+    'muscular neck and broad shoulders',
+    'very thick muscular neck and broad shoulders',
+    'thick muscular neck',
+    'lean neck'
+  ];
+  const EXPRESSIONS = [
+    'confident slight smile',
+    'serious focused expression',
+    'calm confident expression',
+    'intense focused expression',
+    'relaxed friendly slight smirk',
+    'determined expression',
+    'youthful eager smile',
+    'wise veteran stoic expression',
+    'weathered veteran confident expression'
+  ];
+  const SKIN_TONES_MAP = {
+    'Black': ['warm dark brown skin tones', 'deep dark brown skin tones', 'medium brown skin tones', 'rich dark skin tones'],
+    'White': ['fair skin tones', 'fair pinkish skin tones', 'light skin tones', 'tan skin tones'],
+    'Hispanic Latino': ['olive tan skin tones', 'warm tan skin tones', 'light brown skin tones', 'medium tan skin tones'],
+    'Polynesian Samoan': ['brown skin tones', 'warm brown skin tones', 'deep tan skin tones'],
+    'Asian': ['light tan East Asian skin tones', 'warm tan skin tones', 'light skin tones'],
+    'mixed-race biracial': ['light caramel skin tones with freckles', 'warm olive skin tones', 'medium tan skin tones'],
+  };
+
+  function buildPrompt(template) {
+    const ethnicities = getActiveTags('tagEthnicity');
+    const hairstyles = getActiveTags('tagHairstyle');
+    const facialHairs = getActiveTags('tagFacialHair');
+    const accessories = getActiveTags('tagAccessories');
+
+    if (!ethnicities.length || !hairstyles.length || !facialHairs.length || !accessories.length) {
+      return null;
+    }
+
+    const ethnicity = pickRandom(ethnicities);
+    const skinTones = SKIN_TONES_MAP[ethnicity] || ['natural skin tones'];
+
+    return template
+      .replace('{ethnicity}', ethnicity)
+      .replace('{age}', pickRandom(AGES))
+      .replace('{hairstyle}', pickRandom(hairstyles))
+      .replace('{facial_hair}', pickRandom(facialHairs))
+      .replace('{accessories}', pickRandom(accessories))
+      .replace('{build}', pickRandom(BUILDS))
+      .replace('{expression}', pickRandom(EXPRESSIONS))
+      .replace('{skin_tone}', pickRandom(skinTones));
+  }
+
+  // ─── Log ───────────────────────────────────────────
+  let logLines = [];
+
+  function log(msg, type = '') {
+    const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+    logLines.push({ msg: `[${ts}] ${msg}`, type });
+    updateLogUI();
+  }
+
+  function updateLogUI() {
+    const el = document.getElementById('logContent');
+    if (!el) return;
+    el.innerHTML = logLines.slice(-100).map(l =>
+      `<div class="log-line ${l.type}">${l.msg}</div>`
+    ).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ─── UI Updates ────────────────────────────────────
+  function setStatus(status, text) {
+    const dot = document.getElementById('statusDot');
+    dot.className = 'status-dot ' + status;
+    document.getElementById('statusText').textContent = text;
+  }
+
+  function renderMain() {
+    const main = document.getElementById('mainContent');
+    if (state.generated.length === 0 && !state.running) {
+      document.getElementById('emptyState').style.display = '';
+      return;
+    }
+
+    const existing = document.getElementById('emptyState');
+    if (existing) existing.style.display = 'none';
+
+    // Ensure structure exists
+    if (!document.getElementById('progressSection')) {
+      main.innerHTML = `
+        <div class="progress-section" id="progressSection">
+          <div class="progress-header">
+            <div class="progress-title" id="progressTitle">Generating...</div>
+            <div class="progress-stats">
+              <span id="progressCount">0 / 0</span>
+              <span id="progressFailed" style="color:var(--danger);display:none">0 failed</span>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+        <div class="grid-controls">
+          <div class="grid-controls-left">
+            <span style="font-size:13px;font-weight:600;">Generated Avatars</span>
+            <span style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace" id="gridCount">0</span>
+          </div>
+        </div>
+        <div class="image-grid" id="imageGrid"></div>
+        <div class="log-panel">
+          <div class="log-header" onclick="toggleLog()">
+            <h3>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+              Generation Log
+            </h3>
+            <span style="font-size:11px;color:var(--text-muted)" id="logCount">0 entries</span>
+          </div>
+          <div class="log-content" id="logContent"></div>
+        </div>
+      `;
+    }
+
+    // Update progress
+    const pct = state.total > 0 ? ((state.completed + state.failed) / state.total * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressCount').textContent = `${state.completed} / ${state.total}`;
+    document.getElementById('gridCount').textContent = state.generated.length;
+    document.getElementById('logCount').textContent = logLines.length + ' entries';
+
+    if (state.failed > 0) {
+      const el = document.getElementById('progressFailed');
+      el.style.display = '';
+      el.textContent = state.failed + ' failed';
+    }
+
+    if (!state.running && state.completed + state.failed >= state.total && state.total > 0) {
+      document.getElementById('progressTitle').textContent = 'Complete';
+    }
+
+    // Update grid
+    const grid = document.getElementById('imageGrid');
+    // Only append new cells
+    const existingCells = grid.children.length;
+    for (let i = existingCells; i < state.generated.length; i++) {
+      const item = state.generated[i];
+      const cell = document.createElement('div');
+      cell.className = 'image-cell';
+      cell.onclick = () => openModal(i);
+      cell.innerHTML = `
+        <img src="${item.url}" loading="lazy" />
+        <div class="cell-index">#${item.index + 1}</div>
+      `;
+      grid.appendChild(cell);
+    }
+  }
+
+  function toggleLog() {
+    const lc = document.getElementById('logContent');
+    lc.style.display = lc.style.display === 'none' ? '' : 'none';
+  }
+
+  // ─── Modal ─────────────────────────────────────────
+  function openModal(i) {
+    const item = state.generated[i];
+    if (!item) return;
+    state.currentModalIndex = i;
+    document.getElementById('modalImg').src = item.url;
+    document.getElementById('modalPrompt').textContent = item.prompt;
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('modalOverlay').classList.remove('active');
+  }
+
+  function downloadSingle() {
+    const item = state.generated[state.currentModalIndex];
+    if (!item) return;
+    const a = document.createElement('a');
+    a.href = item.url;
+    a.download = `nextgm_avatar_${String(item.index + 1).padStart(4, '0')}.png`;
+    a.click();
+  }
+
+  // ─── API Call ──────────────────────────────────────
+  async function generateImage(prompt, index, signal) {
+    const model = getModel();
+    const imageSize = document.getElementById('imageSize').value;
+
+    const submitBody = {
+      action: 'submit',
+      model,
+      prompt,
+      image_size: imageSize,
+    };
+
+    if (model === 'fal-ai/flux/schnell') {
+      submitBody.num_inference_steps = 4;
+    } else if (model === 'fal-ai/flux/dev') {
+      submitBody.num_inference_steps = 28;
+      submitBody.guidance_scale = 3.5;
+    }
+
+    const submitRes = await fetch('/api/fal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(submitBody),
+      signal,
+    });
+
+    if (!submitRes.ok) {
+      const err = await submitRes.text();
+      throw new Error(`API ${submitRes.status}: ${err}`);
+    }
+
+    const { request_id } = await submitRes.json();
+
+    let attempts = 0;
+    while (attempts < 120) {
+      if (signal.aborted) throw new Error('Aborted');
+      await new Promise(r => setTimeout(r, 1000));
+
+      const statusRes = await fetch('/api/fal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'status', model, request_id }),
+        signal,
+      });
+
+      const statusData = await statusRes.json();
+
+      if (statusData.status === 'COMPLETED') {
+        const resultRes = await fetch('/api/fal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'result', model, request_id }),
+          signal,
+        });
+        const result = await resultRes.json();
+        return result.images[0].url;
+      }
+
+      if (statusData.status === 'FAILED') {
+        throw new Error('Generation failed on server');
+      }
+
+      attempts++;
+    }
+
+    throw new Error('Timeout waiting for result');
+  }
+
+  // ─── Generation Engine ─────────────────────────────
+  async function startGeneration() {
+    const template = document.getElementById('basePrompt').value;
+    const batchSize = parseInt(document.getElementById('batchSize').value);
+    const concurrency = parseInt(document.getElementById('concurrency').value);
+
+    // Test with a quick prompt build
+    if (!buildPrompt(template)) {
+      alert('Please select at least one option in each variation category');
+      return;
+    }
+
+    // Reset
+    state.running = true;
+    state.paused = false;
+    state.generated = [];
+    state.errors = [];
+    state.total = batchSize;
+    state.completed = 0;
+    state.failed = 0;
+    state.abortController = new AbortController();
+    logLines = [];
+
+    document.getElementById('btnGenerate').disabled = true;
+    document.getElementById('btnPause').disabled = false;
+    document.getElementById('btnStop').disabled = false;
+    document.getElementById('btnDownload').disabled = true;
+
+    setStatus('running', `generating 0/${batchSize}`);
+    renderMain();
+    log(`Starting batch of ${batchSize} avatars with model ${getModel()}`, 'info');
+    log(`Concurrency: ${concurrency}`, 'info');
+
+    // Build all prompts upfront
+    const prompts = [];
+    for (let i = 0; i < batchSize; i++) {
+      prompts.push({ prompt: buildPrompt(template), index: i });
+    }
+
+    // Process with concurrency limit
+    let cursor = 0;
+
+    async function worker() {
+      while (cursor < prompts.length && !state.abortController.signal.aborted) {
+        if (state.paused) {
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+
+        const idx = cursor++;
+        const { prompt, index } = prompts[idx];
+
+        try {
+          log(`[${index + 1}/${batchSize}] Generating...`);
+          const url = await generateImage(prompt, index, state.abortController.signal);
+
+          state.completed++;
+          state.generated.push({ url, prompt, index });
+          log(`[${index + 1}/${batchSize}] Done`, 'success');
+        } catch (err) {
+          if (err.name === 'AbortError' || err.message === 'Aborted') return;
+          state.failed++;
+          state.errors.push({ index, error: err.message, prompt });
+          log(`[${index + 1}/${batchSize}] Error: ${err.message}`, 'error');
+        }
+
+        setStatus('running', `generating ${state.completed}/${batchSize}`);
+        updateCostDisplay();
+        renderMain();
+      }
+    }
+
+    const workers = [];
+    for (let i = 0; i < concurrency; i++) {
+      workers.push(worker());
+    }
+
+    await Promise.all(workers);
+
+    state.running = false;
+    document.getElementById('btnGenerate').disabled = false;
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnDownload').disabled = state.generated.length === 0;
+
+    if (state.abortController.signal.aborted) {
+      setStatus('error', 'stopped');
+      log('Generation stopped by user', 'error');
+    } else {
+      setStatus('active', `done — ${state.completed} avatars`);
+      log(`Batch complete: ${state.completed} success, ${state.failed} failed`, 'success');
+    }
+    renderMain();
+  }
+
+  function pauseGeneration() {
+    state.paused = !state.paused;
+    document.getElementById('btnPause').textContent = state.paused ? 'Resume' : 'Pause';
+    setStatus(state.paused ? 'active' : 'running', state.paused ? 'paused' : `generating ${state.completed}/${state.total}`);
+    log(state.paused ? 'Paused' : 'Resumed', 'info');
+  }
+
+  function stopGeneration() {
+    if (state.abortController) {
+      state.abortController.abort();
+    }
+  }
+
+  function updateCostDisplay() {
+    const price = PRICE_MAP[getModel()] || 0.003;
+    const cost = state.completed * price;
+    document.getElementById('costEstimate').textContent = `$${cost.toFixed(2)}`;
+  }
+
+  // ─── Download All ──────────────────────────────────
+  async function downloadAll() {
+    if (state.generated.length === 0) return;
+
+    log('Preparing download...', 'info');
+    setStatus('running', 'downloading...');
+
+    // Download each image and trigger individual downloads
+    // (ZIP requires a library, so we'll do individual files or a simple approach)
+    for (let i = 0; i < state.generated.length; i++) {
+      const item = state.generated[i];
+      try {
+        const res = await fetch(item.url);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nextgm_avatar_${String(item.index + 1).padStart(4, '0')}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        // Small delay to avoid browser blocking
+        await new Promise(r => setTimeout(r, 200));
+      } catch (err) {
+        log(`Failed to download #${item.index + 1}: ${err.message}`, 'error');
+      }
+    }
+
+    log('Download complete', 'success');
+    setStatus('active', 'done');
+  }
+
+  // No API key needed — handled server-side via Cloudflare secret
+</script>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "cven-cc",
+  "main": "src/index.js",
+  "compatibility_date": "2026-04-12",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
+}
