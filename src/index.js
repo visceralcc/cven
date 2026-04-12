@@ -2,12 +2,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // API route: proxy fal.ai requests
     if (url.pathname === '/api/fal') {
       return handleFalProxy(request, env);
     }
 
-    // Everything else: serve static assets
     return env.ASSETS.fetch(request);
   },
 };
@@ -25,31 +23,41 @@ async function handleFalProxy(request, env) {
 
   if (request.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, {
-      status: 405,
-      headers: corsHeaders,
+      status: 405, headers: corsHeaders,
     });
   }
 
   const FAL_KEY = env.FAL_KEY;
   if (!FAL_KEY) {
     return Response.json({ error: 'FAL_KEY not configured' }, {
-      status: 500,
-      headers: corsHeaders,
+      status: 500, headers: corsHeaders,
     });
   }
 
   try {
     const body = await request.json();
-    const { action, model, prompt, image_size, num_inference_steps, guidance_scale, request_id } = body;
+    const { action, model, prompt, image_size, num_inference_steps,
+            guidance_scale, request_id, image_url, image_urls } = body;
 
     if (action === 'submit') {
-      const falBody = {
-        prompt,
-        image_size: image_size || 'square_hd',
-        num_images: 1,
-        enable_safety_checker: false,
-        output_format: 'png',
-      };
+      const falBody = { prompt };
+
+      // Image-to-image models (Kontext, Flux 2 Edit)
+      if (image_url) {
+        falBody.image_url = image_url;
+      }
+      if (image_urls && image_urls.length > 0) {
+        falBody.image_urls = image_urls;
+      }
+
+      // Text-to-image params
+      if (!image_url && !image_urls) {
+        falBody.image_size = image_size || 'square_hd';
+        falBody.num_images = 1;
+        falBody.output_format = 'png';
+      }
+
+      falBody.enable_safety_checker = false;
       if (num_inference_steps) falBody.num_inference_steps = num_inference_steps;
       if (guidance_scale) falBody.guidance_scale = guidance_scale;
 

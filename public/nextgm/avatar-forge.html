@@ -572,6 +572,38 @@
     justify-content: flex-end;
   }
 
+  /* Style Board */
+  .ref-thumb {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    position: relative;
+    cursor: default;
+  }
+
+  .ref-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ref-thumb .ref-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    text-align: center;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    padding: 2px 0;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -640,6 +672,14 @@
             <div class="model-meta">~$0.03/img · best quality</div>
           </div>
         </label>
+        <label class="model-option" data-model="fal-ai/flux-pro/kontext">
+          <input type="radio" name="model" value="fal-ai/flux-pro/kontext" />
+          <div class="model-radio"></div>
+          <div class="model-info">
+            <div class="model-name">Kontext Pro</div>
+            <div class="model-meta">~$0.04/img · style ref</div>
+          </div>
+        </label>
       </div>
     </div>
 
@@ -662,6 +702,20 @@
           <option value="square">512×512 (Square)</option>
           <option value="portrait_4_3">Portrait 3:4</option>
         </select>
+      </div>
+    </div>
+
+    <div class="matrix-section">
+      <div class="section-label">Style Board</div>
+      <div class="field">
+        <label style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Reference Images</span>
+          <label style="font-size:11px;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-muted);">
+            <input type="checkbox" id="useStyleRefs" checked style="accent-color:var(--accent);" /> Enable
+          </label>
+        </label>
+        <div id="styleBoard" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px;"></div>
+        <div class="hint" style="margin-top:6px">When enabled + Kontext model selected, a matching ethnicity reference is sent with each generation for style consistency.</div>
       </div>
     </div>
 
@@ -784,7 +838,64 @@
     'fal-ai/flux/schnell': 0.003,
     'fal-ai/flux/dev': 0.025,
     'fal-ai/flux-2/pro': 0.03,
+    'fal-ai/flux-pro/kontext': 0.04,
   };
+
+  // ─── Style References ────────────────────────────
+  const STYLE_REFS = {
+    'Black': [
+      '/nextgm/refs/black/01_black_buzzcut.png',
+      '/nextgm/refs/black/03_black_cornrows.png',
+      '/nextgm/refs/black/05_black_beard.png',
+      '/nextgm/refs/black/07_black_afro.png',
+      '/nextgm/refs/black/09_black_bald.png',
+    ],
+    'White': [
+      '/nextgm/refs/white/02_white_wavy.png',
+      '/nextgm/refs/white/06_white_blonde.png',
+    ],
+    'Hispanic Latino': [
+      '/nextgm/refs/hispanic/04_hispanic_manbun.png',
+    ],
+    'Polynesian Samoan': [],
+    'Asian': [
+      '/nextgm/refs/asian/08_asian_spiky.png',
+    ],
+    'mixed-race biracial': [
+      '/nextgm/refs/mixed/10_mixed_dreads.png',
+    ],
+  };
+
+  function renderStyleBoard() {
+    const board = document.getElementById('styleBoard');
+    board.innerHTML = '';
+    const allRefs = [];
+    for (const [eth, refs] of Object.entries(STYLE_REFS)) {
+      for (const ref of refs) {
+        allRefs.push({ eth, ref });
+      }
+    }
+    for (const { eth, ref } of allRefs) {
+      const shortEth = eth.split(' ')[0];
+      const div = document.createElement('div');
+      div.className = 'ref-thumb';
+      div.innerHTML = `<img src="${ref}" loading="lazy" /><div class="ref-label">${shortEth}</div>`;
+      board.appendChild(div);
+    }
+  }
+
+  renderStyleBoard();
+
+  function getRefForEthnicity(ethnicity) {
+    const refs = STYLE_REFS[ethnicity];
+    if (!refs || refs.length === 0) {
+      // Fallback: pick from any available ref
+      const allRefs = Object.values(STYLE_REFS).flat();
+      if (allRefs.length === 0) return null;
+      return window.location.origin + allRefs[Math.floor(Math.random() * allRefs.length)];
+    }
+    return window.location.origin + refs[Math.floor(Math.random() * refs.length)];
+  }
 
   // ─── Helpers ────────────────────────────────────────
   function getActiveTags(id) {
@@ -865,7 +976,7 @@
     const ethnicity = pickRandom(ethnicities);
     const skinTones = SKIN_TONES_MAP[ethnicity] || ['natural skin tones'];
 
-    return template
+    const prompt = template
       .replace('{ethnicity}', ethnicity)
       .replace('{age}', pickRandom(AGES))
       .replace('{hairstyle}', pickRandom(hairstyles))
@@ -874,6 +985,8 @@
       .replace('{build}', pickRandom(BUILDS))
       .replace('{expression}', pickRandom(EXPRESSIONS))
       .replace('{skin_tone}', pickRandom(skinTones));
+
+    return { prompt, ethnicity };
   }
 
   // ─── Log ───────────────────────────────────────────
@@ -1008,9 +1121,10 @@
   }
 
   // ─── API Call ──────────────────────────────────────
-  async function generateImage(prompt, index, signal) {
+  async function generateImage(prompt, index, signal, ethnicity) {
     const model = getModel();
     const imageSize = document.getElementById('imageSize').value;
+    const useRefs = document.getElementById('useStyleRefs').checked;
 
     const submitBody = {
       action: 'submit',
@@ -1018,6 +1132,14 @@
       prompt,
       image_size: imageSize,
     };
+
+    // Kontext: attach a style reference image
+    if (model === 'fal-ai/flux-pro/kontext' && useRefs && ethnicity) {
+      const refUrl = getRefForEthnicity(ethnicity);
+      if (refUrl) {
+        submitBody.image_url = refUrl;
+      }
+    }
 
     if (model === 'fal-ai/flux/schnell') {
       submitBody.num_inference_steps = 4;
@@ -1111,7 +1233,8 @@
     // Build all prompts upfront
     const prompts = [];
     for (let i = 0; i < batchSize; i++) {
-      prompts.push({ prompt: buildPrompt(template), index: i });
+      const built = buildPrompt(template);
+      prompts.push({ prompt: built.prompt, ethnicity: built.ethnicity, index: i });
     }
 
     // Process with concurrency limit
@@ -1125,11 +1248,11 @@
         }
 
         const idx = cursor++;
-        const { prompt, index } = prompts[idx];
+        const { prompt, index, ethnicity } = prompts[idx];
 
         try {
           log(`[${index + 1}/${batchSize}] Generating...`);
-          const url = await generateImage(prompt, index, state.abortController.signal);
+          const url = await generateImage(prompt, index, state.abortController.signal, ethnicity);
 
           state.completed++;
           state.generated.push({ url, prompt, index });
