@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Forge — Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #ecedf0;
+    --surface: #f5f5f7;
+    --surface-2: #e4e5e9;
+    --surface-3: #d8d9de;
+    --border: #c8c9d0;
+    --text: #1a1a24;
+    --text-dim: #505068;
+    --text-muted: #80809a;
+    --accent: #16B201;
+    --accent-dim: #3a7d20;
+    --danger: #c83030;
+    --success: #2a8a4a;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --content-width: 720px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .logo span { color: var(--text-dim); font-weight: 400; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    transition: all 0.15s;
+  }
+
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Layout ── */
+  .page {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* ── Sidebar nav ── */
+  .nav {
+    position: sticky;
+    top: 73px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 10px;
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+
+  .nav-label:first-child { margin-top: 0; }
+
+  .nav a {
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.15s;
+    line-height: 1.3;
+  }
+
+  .nav a:hover { background: var(--surface-2); color: var(--text); }
+  .nav a.active { background: rgba(22,178,1,0.1); color: var(--accent); font-weight: 600; }
+
+  /* ── Content ── */
+  .content {
+    max-width: var(--content-width);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── Section ── */
+  .section {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section:first-child { padding-top: 0; }
+  .section:last-child { border-bottom: none; }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  .section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+
+  .section p {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .section p:last-child { margin-bottom: 0; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+
+  thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 8px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+
+  tbody td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+    line-height: 1.5;
+    background: var(--surface);
+  }
+
+  tbody tr:nth-child(even) td { background: var(--surface-2); }
+
+  td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* ── Code blocks ── */
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .code-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.6;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .code-line::before {
+    content: '$';
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .code-line.comment::before { content: '#'; color: var(--text-muted); font-weight: 400; }
+  .code-line.comment { color: var(--text-muted); font-style: italic; }
+
+  /* ── Note/callout ── */
+  .note {
+    background: rgba(22,178,1,0.06);
+    border: 1px solid rgba(22,178,1,0.2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 14px;
+    margin: 14px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .note strong { color: var(--text); }
+
+  .warn {
+    background: rgba(184,138,32,0.06);
+    border: 1px solid rgba(184,138,32,0.25);
+    border-left: 3px solid #b88a20;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 14px;
+    margin: 14px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ── Inline code ── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--accent-dim);
+  }
+
+  /* ── Lists ── */
+  .section ul, .section ol {
+    padding-left: 20px;
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .section li {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .section li strong { color: var(--text); }
+
+  /* ── Tag pills ── */
+  .tag-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 10px 0;
+  }
+
+  .tag-pill {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--surface-3);
+  }
+
+  .tag-pill.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ── Cost table highlight ── */
+  .cost-highlight td:last-child {
+    color: var(--accent-dim);
+    font-weight: 600;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 760px) {
+    .page { grid-template-columns: 1fr; gap: 0; padding: 24px 16px 60px; }
+    .nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <a href="/nextgm/avatar-forge" class="logo">NEXTGM <span>/ avatar forge</span></a>
+  </div>
+  <a href="/nextgm/avatar-forge" class="back-btn">
+    ← Back to Forge
+  </a>
+</div>
+
+<div class="page">
+
+  <!-- ── Sidebar nav ── -->
+  <nav class="nav">
+    <div class="nav-label">Guide</div>
+    <a href="#what-it-is">What It Is</a>
+    <a href="#models">Models</a>
+    <a href="#settings">Generation Settings</a>
+    <a href="#filters">Filters</a>
+    <a href="#style-board">Style Board & Refs</a>
+    <a href="#prompt">The Prompt</a>
+    <a href="#deploying">Deploying</a>
+    <a href="#commands">Quick Reference</a>
+    <a href="#files">File Structure</a>
+    <a href="#cost">Cost Reference</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+  </nav>
+
+  <!-- ── Content ── -->
+  <div class="content">
+
+    <div class="section" id="what-it-is">
+      <div class="section-num">Overview</div>
+      <h2>What It Is</h2>
+      <p>Avatar Forge is a private web tool that generates illustrated player portraits for NextGM using AI image generation via fal.ai. It lives at <code>cven.cc/nextgm/avatar-forge</code> and runs on Cloudflare Workers — no server to manage, no login required.</p>
+      <p>The tool lets you choose a model, set filters for player attributes, and generate batches of portraits in one click. The goal is to eventually produce all 2,700 avatars needed for the full NextGM player pool.</p>
+    </div>
+
+    <div class="section" id="models">
+      <div class="section-num">01</div>
+      <h2>Models</h2>
+      <p>Four models are available. Select one using the radio buttons in the sidebar. The tradeoff is always speed and cost vs. output quality.</p>
+      <table>
+        <thead><tr><th>Model</th><th>Cost</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td>FLUX.1 Schnell</td><td>~$0.003/img</td><td>Quick tests — fastest, cheapest, output is rougher</td></tr>
+          <tr><td>FLUX.1 Dev</td><td>~$0.025/img</td><td>Better quality drafts</td></tr>
+          <tr><td>FLUX 2 Pro</td><td>~$0.03/img</td><td>High quality text-to-image generation</td></tr>
+          <tr><td>Kontext Pro</td><td>~$0.04/img</td><td>Style-matched output using reference images — closest to the original illustration style</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><strong>Recommended:</strong> Use Kontext Pro when output quality matters. It uses one of your reference images as a style anchor, which pulls the output toward the cell-shaded cartoon look of the original Perplexity-generated avatars. Use Schnell for broad testing while tuning filters and prompts.</div>
+    </div>
+
+    <div class="section" id="settings">
+      <div class="section-num">02</div>
+      <h2>Generation Settings</h2>
+
+      <h3>Batch Size</h3>
+      <p>How many images to generate in one run. Start with 3–5 when testing a new prompt or model. Scale up once you're happy with the output.</p>
+
+      <h3>Concurrency</h3>
+      <p>How many images are generated simultaneously. At 3, it fires 3 requests at once, waits for each to finish, then starts the next group. Higher = faster batches, but you can hit fal.ai rate limits. The default of 3 is safe to leave as-is.</p>
+
+      <h3>Image Size</h3>
+      <p>Square HD (512×512) is the standard for player avatars. Portrait 3:4 gives more vertical room if you want to show more of the chest and shoulders.</p>
+    </div>
+
+    <div class="section" id="filters">
+      <div class="section-num">03</div>
+      <h2>Variation Matrix (Filters)</h2>
+      <p>The filters control what gets randomly selected for each image in a batch. All filters start <strong>off</strong> (gray) — click to toggle <strong>on</strong> (green). At least one option must be active in each category before you can generate.</p>
+
+      <div class="tag-preview">
+        <span class="tag-pill">lean</span>
+        <span class="tag-pill on">athletic</span>
+        <span class="tag-pill">stocky</span>
+        <span class="tag-pill on">beefy</span>
+        <span class="tag-pill">round</span>
+      </div>
+
+      <p>When you run a batch, each image independently picks one random value from each active filter and plugs it into the prompt. So if you have Black and White both active, the batch will include a mix of both.</p>
+      <div class="note"><strong>To generate one specific type</strong> — say, only Black players with buzz cuts — activate only those specific tags and leave everything else off.</div>
+
+      <h3>Filter Categories</h3>
+      <table>
+        <thead><tr><th>Category</th><th>What it controls</th></tr></thead>
+        <tbody>
+          <tr><td>Ethnicity</td><td>The player's described racial/ethnic background. Also determines which style reference image is used (Kontext only).</td></tr>
+          <tr><td>Hairstyle</td><td>Hair description passed to the model — buzz cut, dreads, afro, fade, man bun, etc.</td></tr>
+          <tr><td>Body Type</td><td>Physical build — lean, athletic, stocky, heavy-set, beefy, round.</td></tr>
+          <tr><td>Facial Hair</td><td>Clean-shaven, stubble, full beard, goatee, mustache, salt & pepper.</td></tr>
+          <tr><td>Accessories</td><td>Earring styles — none, studs, hoops, diamonds, single hoop.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="style-board">
+      <div class="section-num">04</div>
+      <h2>Style Board & Reference Images</h2>
+      <p>The Style Board shows the reference images currently loaded for each ethnicity. These are used <strong>exclusively with Kontext Pro</strong> — one is randomly picked per image to guide the illustration style.</p>
+      <ul>
+        <li>Each ethnicity has its own folder of reference images</li>
+        <li>When Kontext Pro runs, it picks one ref from the matching ethnicity folder</li>
+        <li>If an ethnicity has no refs, no reference is sent — it falls back to pure text-to-image</li>
+        <li>Inactive ethnicity tags (toggled off) appear dimmed in the style board</li>
+        <li>Each bucket shows a green ref count or a red "no refs" warning</li>
+      </ul>
+
+      <h3>Adding New Reference Images</h3>
+      <p>This is a two-step process. Files must be added locally AND the code must be synced before deploying.</p>
+
+      <p><strong>Step 1:</strong> Drop your new PNG files into the correct ethnicity folder on your Mac:</p>
+      <div class="code-block">
+        <span class="code-line comment">navigate to the refs folder for the ethnicity you want</span>
+        <span class="code-line" style="padding-left:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">~/dev/cven/public/nextgm/refs/black/</span>
+        <span class="code-line" style="padding-left:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">~/dev/cven/public/nextgm/refs/white/</span>
+        <span class="code-line" style="padding-left:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">~/dev/cven/public/nextgm/refs/hispanic/</span>
+        <span class="code-line" style="padding-left:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">~/dev/cven/public/nextgm/refs/polynesian/</span>
+        <span class="code-line" style="padding-left:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">~/dev/cven/public/nextgm/refs/asian/</span>
+        <span class="code-line" style="padding-left:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">~/dev/cven/public/nextgm/refs/mixed/</span>
+      </div>
+
+      <p><strong>Step 2:</strong> Run the sync script and deploy:</p>
+      <div class="code-block">
+        <span class="code-line">cd ~/dev/cven</span>
+        <span class="code-line">node sync-refs.js</span>
+        <span class="code-line">npx wrangler deploy</span>
+      </div>
+      <div class="note">The <code>sync-refs.js</code> script auto-scans all ref folders and updates the image list in the HTML. You never need to edit that list manually — just run the script after adding files, then deploy.</div>
+
+      <h3>Naming Convention</h3>
+      <p>Files can be named anything. The existing convention is <code>NN_ethnicity_descriptor.png</code> — for example, <code>01_black_buzzcut.png</code> or <code>06_white_blonde.png</code>. The number is just for sorting. Hover a thumbnail in the style board to see the filename.</p>
+    </div>
+
+    <div class="section" id="prompt">
+      <div class="section-num">05</div>
+      <h2>The Prompt</h2>
+      <p>The text box in the Style Template section is the actual instruction sent to the AI model for every image in the batch. Variables in curly braces get replaced with random values from your active filters on each generation.</p>
+
+      <h3>Variables</h3>
+      <table>
+        <thead><tr><th>Variable</th><th>Replaced with</th></tr></thead>
+        <tbody>
+          <tr><td>{ethnicity}</td><td>Random active ethnicity tag (e.g. "Black", "Hispanic Latino")</td></tr>
+          <tr><td>{age}</td><td>Random age between 21–38</td></tr>
+          <tr><td>{hairstyle}</td><td>Random active hairstyle tag</td></tr>
+          <tr><td>{body_type}</td><td>Random active body type tag</td></tr>
+          <tr><td>{build}</td><td>Random neck/shoulder description (hardcoded — e.g. "muscular neck and broad shoulders")</td></tr>
+          <tr><td>{facial_hair}</td><td>Random active facial hair tag</td></tr>
+          <tr><td>{accessories}</td><td>Random active accessories tag</td></tr>
+          <tr><td>{expression}</td><td>Random expression from a hardcoded list (confident, serious, stoic, etc.)</td></tr>
+          <tr><td>{skin_tone}</td><td>Random skin tone matched to the selected ethnicity</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Editing the Prompt</h3>
+      <p>You can edit the prompt text directly in the browser. Changes take effect immediately — no deploy needed. The prompt resets to the baked-in default any time you hard-refresh the page (<code>Cmd+R</code>).</p>
+      <div class="note">If you find a prompt version that works well and want it to become the permanent default, ask Claude to update the HTML and deploy it.</div>
+    </div>
+
+    <div class="section" id="deploying">
+      <div class="section-num">06</div>
+      <h2>Deploying Changes</h2>
+      <p>All changes to the tool — UI updates, new ref images, baked-in prompt changes — require a deploy to go live. The tool is hosted on Cloudflare Workers.</p>
+      <p>Always deploy from the project root:</p>
+      <div class="code-block">
+        <span class="code-line">cd ~/dev/cven</span>
+        <span class="code-line">npx wrangler deploy</span>
+      </div>
+      <p>Deploy takes about 10 seconds. Changes are live immediately after — no cache to clear.</p>
+
+      <h3>What Requires a Deploy</h3>
+      <ul>
+        <li>Adding new reference images (after running <code>sync-refs.js</code>)</li>
+        <li>Changing the default prompt text permanently</li>
+        <li>Adding new filter tags or values</li>
+        <li>Any UI or layout changes</li>
+      </ul>
+
+      <h3>What Does NOT Require a Deploy</h3>
+      <ul>
+        <li>Editing the prompt in the browser (session-only, resets on refresh)</li>
+        <li>Toggling filter tags on/off</li>
+        <li>Changing model, batch size, or concurrency</li>
+      </ul>
+    </div>
+
+    <div class="section" id="commands">
+      <div class="section-num">07</div>
+      <h2>Quick Reference — Terminal Commands</h2>
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>cd ~/dev/cven</td><td>Navigate to the project folder. Always run this first.</td></tr>
+          <tr><td>node sync-refs.js</td><td>Scan ref folders and update the image list in the HTML. Run after adding new ref images.</td></tr>
+          <tr><td>npx wrangler deploy</td><td>Deploy all changes to Cloudflare — makes them live at cven.cc.</td></tr>
+        </tbody>
+      </table>
+      <div class="note">When adding new ref images: <strong>always run both <code>node sync-refs.js</code> and <code>npx wrangler deploy</code></strong> in that order. One without the other won't work.</div>
+    </div>
+
+    <div class="section" id="files">
+      <div class="section-num">08</div>
+      <h2>File Structure</h2>
+      <p>Everything lives at <code>~/dev/cven/</code>. The key files:</p>
+      <table>
+        <thead><tr><th>File / Folder</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>public/nextgm/avatar-forge.html</td><td>The entire tool — all controls, logic, and styling in one file.</td></tr>
+          <tr><td>public/nextgm/avatar-forge-guide.html</td><td>This guide.</td></tr>
+          <tr><td>public/nextgm/refs/</td><td>Reference image folders, one subfolder per ethnicity.</td></tr>
+          <tr><td>src/index.js</td><td>Cloudflare Worker — serves static files and proxies API calls to fal.ai with the secret key.</td></tr>
+          <tr><td>sync-refs.js</td><td>Script that auto-updates the image list from the refs/ folders. Run after adding new images.</td></tr>
+          <tr><td>wrangler.jsonc</td><td>Cloudflare deployment config. Don't edit unless you know what you're doing.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="cost">
+      <div class="section-num">09</div>
+      <h2>Cost Reference</h2>
+      <table class="cost-highlight">
+        <thead><tr><th>Scale</th><th>Schnell (~$0.003)</th><th>Kontext Pro (~$0.04)</th></tr></thead>
+        <tbody>
+          <tr><td>10 images</td><td>$0.03</td><td>$0.40</td></tr>
+          <tr><td>100 images</td><td>$0.30</td><td>$4.00</td></tr>
+          <tr><td>500 images</td><td>$1.50</td><td>$20.00</td></tr>
+          <tr><td>2,700 (full set)</td><td>~$8</td><td>~$108</td></tr>
+        </tbody>
+      </table>
+      <div class="note">Recommended strategy: use Schnell for broad testing and filter tuning. Once you've locked in the prompt and style, switch to Kontext Pro and generate by ethnicity in batches of 50–100.</div>
+    </div>
+
+    <div class="section" id="troubleshooting">
+      <div class="section-num">10</div>
+      <h2>Troubleshooting</h2>
+
+      <h3>I added images to a refs/ folder but they don't appear in the style board</h3>
+      <p>You need to run <code>node sync-refs.js</code> and then <code>npx wrangler deploy</code>. Adding files to the folder alone is not enough — the HTML has a list that must be updated by the script first.</p>
+
+      <h3>The prompt isn't saving between sessions</h3>
+      <p>The prompt only persists until you refresh the page. If you want a custom prompt to survive refreshes, ask Claude to bake it into the HTML and deploy.</p>
+
+      <h3>Generation failed or timed out</h3>
+      <p>fal.ai requests occasionally time out, especially under load. The tool logs errors in the Generation Log at the bottom of the main panel. A few failures in a large batch are normal — re-run a smaller batch to fill in the gaps.</p>
+
+      <h3>Output images look too much like the reference image</h3>
+      <p>This is a Kontext Pro behavior — it weights the style reference heavily. The best fix is to build up more refs per ethnicity so the model has more variety to draw from, rather than anchoring on a single image each time.</p>
+
+      <h3>Outputs don't match the selected ethnicity</h3>
+      <p>Make sure only the ethnicity tags you want are toggled on (green). If multiple are active, the batch will be a mix. Also confirm the refs folder for that ethnicity has images — check the style board for the green ref count badge.</p>
+
+      <h3>The style board shows "no refs" for an ethnicity</h3>
+      <p>That ethnicity folder is empty. If you generate with Kontext Pro and that ethnicity is selected, it'll fall back to pure text-to-image (no style reference). Add ref images to that folder, run <code>sync-refs.js</code>, and deploy to fix it.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Highlight active nav item on scroll
+  const sections = document.querySelectorAll('.section[id]');
+  const navLinks = document.querySelectorAll('.nav a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

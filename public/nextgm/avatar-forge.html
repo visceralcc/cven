@@ -261,15 +261,15 @@
     padding: 4px 8px;
     border-radius: 5px;
     background: var(--surface-3);
-    color: var(--text-dim);
-    border: 1px solid transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
     cursor: pointer;
     transition: all 0.15s;
     font-family: 'JetBrains Mono', monospace;
   }
 
-  .tag:hover { border-color: var(--border-hover); color: var(--text); }
-  .tag.active { background: rgba(58, 125, 32, 0.12); border-color: var(--accent-dim); color: var(--accent); }
+  .tag:hover { border-color: var(--border-hover); color: var(--text-dim); }
+  .tag.active { background: #16B201; border-color: #16B201; color: #fff; }
 
   /* Buttons */
   .btn {
@@ -572,6 +572,56 @@
     justify-content: flex-end;
   }
 
+  /* New batch flash banner */
+  .new-batch-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    background: rgba(42, 138, 74, 0.12);
+    border: 1px solid rgba(42, 138, 74, 0.35);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--success);
+    font-family: 'JetBrains Mono', monospace;
+    animation: bannerFade 0.4s ease;
+  }
+
+  @keyframes bannerFade {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Batch history */
+  .batch-history {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .batch-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .batch-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .batch-label.current {
+    color: var(--success);
+    border-bottom-color: rgba(42, 138, 74, 0.3);
+  }
+
   /* Style Board */
   .ref-thumb {
     aspect-ratio: 1;
@@ -633,6 +683,7 @@
     </div>
     <div class="header-right">
       <div class="cost-badge">est. cost: <strong id="costEstimate">$0.00</strong></div>
+      <a href="/nextgm/avatar-forge-guide" style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent-dim)';this.style.color='var(--accent-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Guide</a>
       <div class="header-status">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">idle</span>
@@ -714,8 +765,8 @@
             <input type="checkbox" id="useStyleRefs" checked style="accent-color:var(--accent);" /> Enable
           </label>
         </label>
-        <div id="styleBoard" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px;"></div>
-        <div class="hint" style="margin-top:6px">When enabled + Kontext model selected, a matching ethnicity reference is sent with each generation for style consistency.</div>
+        <div id="styleBoard" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        <div class="hint" style="margin-top:6px">One ref is randomly picked per ethnicity at generation time. Add images to <code style="font-size:10px;background:var(--surface-3);padding:1px 4px;border-radius:3px;">refs/[ethnicity]/</code> and redeploy to expand a bucket.</div>
       </div>
     </div>
 
@@ -723,8 +774,8 @@
       <div class="section-label">Style Template</div>
       <div class="field">
         <label>Base Prompt</label>
-        <textarea id="basePrompt">Digital illustration portrait of a {ethnicity} American football player, age {age}, {hairstyle}, {facial_hair}, {accessories}, {build}, wearing a plain neutral brown-gray crew neck t-shirt over a white undershirt, {expression}, {skin_tone}, stylized semi-realistic cartoon art style with bold outlines, cell-shaded coloring, slight caricature proportions with strong jaw, white clean background, head and upper chest visible, front-facing portrait</textarea>
-        <div class="hint">Use {ethnicity}, {age}, {hairstyle}, {facial_hair}, {accessories}, {build}, {expression}, {skin_tone} as variables</div>
+        <textarea id="basePrompt">Digital illustration portrait of a {ethnicity} American football player, age {age}, {hairstyle}, {facial_hair}, {accessories}, {body_type}, {build}, wearing a plain neutral brown-gray crew neck t-shirt over a white undershirt, {expression}, {skin_tone}, stylized semi-realistic cartoon art style with bold outlines, cell-shaded coloring, slight caricature proportions with strong jaw, white clean background, head and upper chest visible, front-facing portrait</textarea>
+        <div class="hint">Use {ethnicity}, {age}, {hairstyle}, {facial_hair}, {accessories}, {body_type}, {build}, {expression}, {skin_tone} as variables</div>
       </div>
     </div>
 
@@ -734,52 +785,67 @@
       <div class="field">
         <label>Ethnicities</label>
         <div class="tag-group" id="tagEthnicity">
-          <span class="tag active" data-val="Black">Black</span>
-          <span class="tag active" data-val="White">White</span>
-          <span class="tag active" data-val="Hispanic Latino">Hispanic</span>
-          <span class="tag active" data-val="Polynesian Samoan">Polynesian</span>
-          <span class="tag active" data-val="Asian">Asian</span>
-          <span class="tag active" data-val="mixed-race biracial">Mixed</span>
+          <span class="tag" data-val="Black">Black</span>
+          <span class="tag" data-val="White">White</span>
+          <span class="tag" data-val="Hispanic Latino">Hispanic</span>
+          <span class="tag" data-val="Polynesian Samoan">Polynesian</span>
+          <span class="tag" data-val="Asian">Asian</span>
+          <span class="tag" data-val="mixed-race biracial">Mixed</span>
         </div>
       </div>
 
       <div class="field" style="margin-top:12px">
         <label>Hairstyles</label>
         <div class="tag-group" id="tagHairstyle">
-          <span class="tag active" data-val="buzz cut hair">buzz cut</span>
-          <span class="tag active" data-val="short cropped hair">short crop</span>
-          <span class="tag active" data-val="medium-length wavy hair">wavy</span>
-          <span class="tag active" data-val="long dreadlocks">dreads</span>
-          <span class="tag active" data-val="cornrow braids">cornrows</span>
-          <span class="tag active" data-val="large afro hairstyle">afro</span>
-          <span class="tag active" data-val="completely bald shaved head">bald</span>
-          <span class="tag active" data-val="man bun with undercut">man bun</span>
-          <span class="tag active" data-val="fade haircut">fade</span>
-          <span class="tag active" data-val="short spiky hair">spiky</span>
-          <span class="tag active" data-val="blonde crop hair">blonde crop</span>
+          <span class="tag" data-val="buzz cut hair">buzz cut</span>
+          <span class="tag" data-val="short cropped hair">short crop</span>
+          <span class="tag" data-val="medium-length wavy hair">wavy</span>
+          <span class="tag" data-val="short dreadlocks">dreads short</span>
+          <span class="tag" data-val="long dreadlocks">dreads long</span>
+          <span class="tag" data-val="long straight hair past shoulders">long hair</span>
+          <span class="tag" data-val="side-parted hair">parted</span>
+          <span class="tag" data-val="cornrow braids">cornrows</span>
+          <span class="tag" data-val="large afro hairstyle">afro</span>
+          <span class="tag" data-val="completely bald shaved head">bald</span>
+          <span class="tag" data-val="man bun with undercut">man bun</span>
+          <span class="tag" data-val="fade haircut">fade</span>
+          <span class="tag" data-val="short spiky hair">spiky</span>
+          <span class="tag" data-val="blonde crop hair">blonde crop</span>
         </div>
       </div>
 
       <div class="field" style="margin-top:12px">
         <label>Facial Hair</label>
         <div class="tag-group" id="tagFacialHair">
-          <span class="tag active" data-val="clean-shaven no facial hair">clean</span>
-          <span class="tag active" data-val="light stubble beard">stubble</span>
-          <span class="tag active" data-val="thick full beard">full beard</span>
-          <span class="tag active" data-val="trimmed goatee">goatee</span>
-          <span class="tag active" data-val="thin mustache">mustache</span>
-          <span class="tag active" data-val="salt-and-pepper gray-flecked goatee">salt & pepper</span>
+          <span class="tag" data-val="clean-shaven no facial hair">clean</span>
+          <span class="tag" data-val="light stubble beard">stubble</span>
+          <span class="tag" data-val="thick full beard">full beard</span>
+          <span class="tag" data-val="trimmed goatee">goatee</span>
+          <span class="tag" data-val="thin mustache">mustache</span>
+          <span class="tag" data-val="salt-and-pepper gray-flecked goatee">salt & pepper</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Body Type</label>
+        <div class="tag-group" id="tagBodyType">
+          <span class="tag" data-val="lean wiry frame">lean</span>
+          <span class="tag" data-val="athletic build">athletic</span>
+          <span class="tag" data-val="stocky muscular build">stocky</span>
+          <span class="tag" data-val="large heavy-set frame">heavy-set</span>
+          <span class="tag" data-val="massive beefy frame">beefy</span>
+          <span class="tag" data-val="round heavyset body">round</span>
         </div>
       </div>
 
       <div class="field" style="margin-top:12px">
         <label>Accessories</label>
         <div class="tag-group" id="tagAccessories">
-          <span class="tag active" data-val="no earrings or accessories">none</span>
-          <span class="tag active" data-val="small black stud earrings">studs</span>
-          <span class="tag active" data-val="small gold hoop earrings">hoops</span>
-          <span class="tag active" data-val="diamond stud earrings">diamonds</span>
-          <span class="tag active" data-val="one small hoop earring">single hoop</span>
+          <span class="tag" data-val="no earrings or accessories">none</span>
+          <span class="tag" data-val="small black stud earrings">studs</span>
+          <span class="tag" data-val="small gold hoop earrings">hoops</span>
+          <span class="tag" data-val="diamond stud earrings">diamonds</span>
+          <span class="tag" data-val="one small hoop earring">single hoop</span>
         </div>
       </div>
     </div>
@@ -831,7 +897,8 @@
     completed: 0,
     failed: 0,
     abortController: null,
-    currentModalIndex: -1,
+    currentModalUrl: null,   // store URL directly, not index — fixes modal flicker
+    batchHistory: [],        // last 3 completed batches [{timestamp, images:[]}]
   };
 
   const PRICE_MAP = {
@@ -849,9 +916,14 @@
       '/nextgm/refs/black/05_black_beard.png',
       '/nextgm/refs/black/07_black_afro.png',
       '/nextgm/refs/black/09_black_bald.png',
+      '/nextgm/refs/black/10_black_short.png',
     ],
     'White': [
+      '/nextgm/refs/white/01_white_wavy.png',
       '/nextgm/refs/white/02_white_wavy.png',
+      '/nextgm/refs/white/03_white_wavy.png',
+      '/nextgm/refs/white/04_white_short.png',
+      '/nextgm/refs/white/05_white_long.png',
       '/nextgm/refs/white/06_white_blonde.png',
     ],
     'Hispanic Latino': [
@@ -866,21 +938,57 @@
     ],
   };
 
+  // Ethnicity display labels (short names for UI)
+  const ETH_LABELS = {
+    'Black': 'Black',
+    'White': 'White',
+    'Hispanic Latino': 'Hispanic',
+    'Polynesian Samoan': 'Polynesian',
+    'Asian': 'Asian',
+    'mixed-race biracial': 'Mixed',
+  };
+
   function renderStyleBoard() {
     const board = document.getElementById('styleBoard');
     board.innerHTML = '';
-    const allRefs = [];
+    const activeEthnicities = getActiveTags('tagEthnicity');
+
     for (const [eth, refs] of Object.entries(STYLE_REFS)) {
-      for (const ref of refs) {
-        allRefs.push({ eth, ref });
+      const isActive = activeEthnicities.includes(eth);
+      const label = ETH_LABELS[eth] || eth;
+      const count = refs.length;
+
+      const section = document.createElement('div');
+      section.style.cssText = `opacity:${isActive ? '1' : '0.35'}; transition:opacity 0.2s;`;
+
+      // Row header: ethnicity name + count badge
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;';
+      header.innerHTML = `
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:${isActive ? 'var(--text-dim)' : 'var(--text-muted)'}">${label}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:4px;background:${count === 0 ? 'rgba(200,48,48,0.1)' : 'rgba(58,125,32,0.1)'};color:${count === 0 ? 'var(--danger)' : 'var(--success)'}">${count === 0 ? 'no refs' : count + ' ref' + (count === 1 ? '' : 's')}</span>
+      `;
+      section.appendChild(header);
+
+      if (count === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:11px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;padding:6px 8px;border:1px dashed var(--border);border-radius:6px;';
+        empty.textContent = 'Add images to refs/' + eth.split(' ')[0].toLowerCase() + '/';
+        section.appendChild(empty);
+      } else {
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:4px;';
+        for (const ref of refs) {
+          const thumb = document.createElement('div');
+          thumb.className = 'ref-thumb';
+          const fname = ref.split('/').pop().replace(/^\d+_[^_]+_/, '').replace('.png','').replace(/_/g,' ');
+          thumb.innerHTML = `<img src="${ref}" loading="lazy" title="${fname}" />`;
+          grid.appendChild(thumb);
+        }
+        section.appendChild(grid);
       }
-    }
-    for (const { eth, ref } of allRefs) {
-      const shortEth = eth.split(' ')[0];
-      const div = document.createElement('div');
-      div.className = 'ref-thumb';
-      div.innerHTML = `<img src="${ref}" loading="lazy" /><div class="ref-label">${shortEth}</div>`;
-      board.appendChild(div);
+
+      board.appendChild(section);
     }
   }
 
@@ -888,12 +996,9 @@
 
   function getRefForEthnicity(ethnicity) {
     const refs = STYLE_REFS[ethnicity];
-    if (!refs || refs.length === 0) {
-      // Fallback: pick from any available ref
-      const allRefs = Object.values(STYLE_REFS).flat();
-      if (allRefs.length === 0) return null;
-      return window.location.origin + allRefs[Math.floor(Math.random() * allRefs.length)];
-    }
+    // If no refs for this ethnicity, do NOT fall back to other ethnicities —
+    // that's what was causing mixed outputs. Return null instead.
+    if (!refs || refs.length === 0) return null;
     return window.location.origin + refs[Math.floor(Math.random() * refs.length)];
   }
 
@@ -918,7 +1023,11 @@
 
   // ─── Tag toggles ───────────────────────────────────
   document.querySelectorAll('.tag-group .tag').forEach(tag => {
-    tag.addEventListener('click', () => tag.classList.toggle('active'));
+    tag.addEventListener('click', () => {
+      tag.classList.toggle('active');
+      // Re-render style board when ethnicity tags change
+      if (tag.closest('#tagEthnicity')) renderStyleBoard();
+    });
   });
 
   // ─── Model selector ────────────────────────────────
@@ -968,8 +1077,9 @@
     const hairstyles = getActiveTags('tagHairstyle');
     const facialHairs = getActiveTags('tagFacialHair');
     const accessories = getActiveTags('tagAccessories');
+    const bodyTypes = getActiveTags('tagBodyType');
 
-    if (!ethnicities.length || !hairstyles.length || !facialHairs.length || !accessories.length) {
+    if (!ethnicities.length || !hairstyles.length || !facialHairs.length || !accessories.length || !bodyTypes.length) {
       return null;
     }
 
@@ -982,6 +1092,7 @@
       .replace('{hairstyle}', pickRandom(hairstyles))
       .replace('{facial_hair}', pickRandom(facialHairs))
       .replace('{accessories}', pickRandom(accessories))
+      .replace('{body_type}', pickRandom(bodyTypes))
       .replace('{build}', pickRandom(BUILDS))
       .replace('{expression}', pickRandom(EXPRESSIONS))
       .replace('{skin_tone}', pickRandom(skinTones));
@@ -1074,18 +1185,22 @@
       document.getElementById('progressTitle').textContent = 'Complete';
     }
 
-    // Update grid
+    // Update grid — append only new cells
+    // IMPORTANT: capture url/prompt/num as const at cell-creation time
+    // so the onclick closure holds stable values, not a shifting index.
     const grid = document.getElementById('imageGrid');
-    // Only append new cells
     const existingCells = grid.children.length;
     for (let i = existingCells; i < state.generated.length; i++) {
       const item = state.generated[i];
+      const capturedUrl = item.url;
+      const capturedPrompt = item.prompt;
+      const capturedNum = item.index + 1;
       const cell = document.createElement('div');
       cell.className = 'image-cell';
-      cell.onclick = () => openModal(i);
+      cell.onclick = () => openModal(capturedUrl, capturedPrompt, capturedNum);
       cell.innerHTML = `
         <img src="${item.url}" loading="lazy" />
-        <div class="cell-index">#${item.index + 1}</div>
+        <div class="cell-index">#${capturedNum}</div>
       `;
       grid.appendChild(cell);
     }
@@ -1097,12 +1212,17 @@
   }
 
   // ─── Modal ─────────────────────────────────────────
-  function openModal(i) {
-    const item = state.generated[i];
-    if (!item) return;
-    state.currentModalIndex = i;
-    document.getElementById('modalImg').src = item.url;
-    document.getElementById('modalPrompt').textContent = item.prompt;
+  // Store the actual url+prompt on click rather than an index —
+  // indexes shift as images arrive concurrently, causing flicker.
+  function openModal(url, prompt, displayNum) {
+    if (!url) return;
+    // Freeze these values into the modal immediately
+    const img = document.getElementById('modalImg');
+    img.src = '';
+    img.src = url;
+    document.getElementById('modalPrompt').textContent = prompt;
+    state.currentModalUrl = url;
+    state.currentModalDisplayNum = displayNum;
     document.getElementById('modalOverlay').classList.add('active');
   }
 
@@ -1112,11 +1232,10 @@
   }
 
   function downloadSingle() {
-    const item = state.generated[state.currentModalIndex];
-    if (!item) return;
+    if (!state.currentModalUrl) return;
     const a = document.createElement('a');
-    a.href = item.url;
-    a.download = `nextgm_avatar_${String(item.index + 1).padStart(4, '0')}.png`;
+    a.href = state.currentModalUrl;
+    a.download = `nextgm_avatar_${String(state.currentModalDisplayNum).padStart(4, '0')}.png`;
     a.click();
   }
 
@@ -1175,7 +1294,7 @@
       return;
     }
 
-    // Reset
+    // Reset current batch state
     state.running = true;
     state.paused = false;
     state.generated = [];
@@ -1190,6 +1309,14 @@
     document.getElementById('btnPause').disabled = false;
     document.getElementById('btnStop').disabled = false;
     document.getElementById('btnDownload').disabled = true;
+
+    // Wipe the main panel so it's obvious new images are incoming
+    const main = document.getElementById('mainContent');
+    main.innerHTML = '';
+    const emptyShell = document.createElement('div');
+    emptyShell.id = 'emptyState';
+    emptyShell.style.display = 'none';
+    main.appendChild(emptyShell);
 
     setStatus('running', `generating 0/${batchSize}`);
     renderMain();
@@ -1255,6 +1382,22 @@
     } else {
       setStatus('active', `done — ${state.completed} avatars`);
       log(`Batch complete: ${state.completed} success, ${state.failed} failed`, 'success');
+
+      // Push completed batch into history (keep last 3)
+      if (state.generated.length > 0) {
+        state.batchHistory.unshift({
+          timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+          images: [...state.generated],
+        });
+        if (state.batchHistory.length > 3) state.batchHistory.pop();
+      }
+
+      // Show a clear "new batch" banner in the grid area
+      const progressTitle = document.getElementById('progressTitle');
+      if (progressTitle) {
+        progressTitle.innerHTML = `✦ Batch complete — ${state.completed} new avatars`;
+        progressTitle.style.color = 'var(--success)';
+      }
     }
     renderMain();
   }
