@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elemental Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;500&family=Volkhov:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { width: 100%; height: 100%; overflow: hidden; background: #161616; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 3px; background: rgba(255,255,255,0.15);
+  border-radius: 2px; outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px;
+  border-radius: 50%; background: #00C3FF; cursor: pointer; border: none;
+}
+textarea::placeholder { color: rgba(255,255,255,0.5); font-family: 'Volkhov', serif; }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useRef, useCallback, useEffect, createElement: h } = React;
+
+const T = {
+  brandCyan: "#00C3FF", brandCyanDeep: "#006B99",
+  brandBlue: "#0095FF", brandBlueDeep: "#0449B8",
+  brandCyanHover: "#00DDFF", brandCyanHoverDeep: "#0187C1",
+  brandCyanBright: "#01BEF9", brandCyanHighlight: "#01D4F9",
+  brandCyanPill: "#00B2F3",
+  surfaceTopBar: "#4B4B4B", surfaceAgent: "#1F1F1F",
+  surfaceElements: "#373737",
+  surfaceCanvasLight: "#2C2C2C", surfaceCanvasDark: "#161616",
+  surfaceTabAgentStart: "#000000", surfaceTabAgentEnd: "#1F1F1F",
+  surfaceTabElementsStart: "#282828", surfaceTabElementsEnd: "#3B3B3B",
+  surfaceTabCanvasStart: "#1C1C1C", surfaceTabCanvasEnd: "#2A2A2A",
+  surfacePickerOverlay: "rgba(255,255,255,0.09)",
+  grayButtonLight: "#9A9A9A", grayButtonDark: "#515151",
+  grayModeInactive: "#848484", grayBorder: "#888888",
+  grayPlaceholder: "#D9D9D9", grayDoneBg: "#EAEAEA",
+  textPrimary: "#FFFFFF", textAccent: "#01BEF9",
+  textDone: "#00B2F3", textMuted: "rgba(255,255,255,0.5)",
+  spaceLg: 16, radiusButton: 4, radiusTab: 23,
+  radiusPill: 29, radiusInput: 31, radiusDone: 45,
+  agentDefault: 280, agentMin: 240, agentMax: 400,
+  elementsDefault: 300, elementsMin: 260, elementsMax: 480,
+  collapsedRail: 36,
+};
+
+const grad = (c1, c2, dir) => `linear-gradient(${dir||'to right'}, ${c1}, ${c2})`;
+
+const modes = [
+  { id:"agent", icon:"\u2726", label:"Agent", shortcut:"1" },
+  { id:"elements", icon:"\u2630", label:"Elements", shortcut:"2" },
+  { id:"settings", icon:"\u2699", label:"Settings", shortcut:"3" },
+  { id:"code", icon:"</>", label:"Code", shortcut:"4" },
+  { id:"preview", icon:"\uD83D\uDC41", label:"Preview", shortcut:"5" },
+];
+
+function ModePill({ mode, active, onClick }) {
+  const [hov, setHov] = useState(false);
+  return h('button', {
+    onClick, title: mode.label+' (\u2318\u21E7'+mode.shortcut+')',
+    onMouseEnter: ()=>setHov(true), onMouseLeave: ()=>setHov(false),
+    style: {
+      width:54, height:29, borderRadius:T.radiusPill,
+      background: active ? T.brandCyanPill : hov ? '#999' : T.grayModeInactive,
+      border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+      color:T.textPrimary, fontSize: mode.id==='code'?11:14,
+      fontFamily: mode.id==='code' ? 'monospace' : "'Barlow',sans-serif",
+      fontWeight:500, transition:'background 0.15s', padding:0,
+      letterSpacing: mode.id==='code'?-0.5:0,
+    }
+  }, mode.icon);
+}
+
+function ModeBar({ activeMode, onModeChange }) {
+  return h('div', { style: {
+    height:44, background:T.surfaceTopBar, display:'flex', alignItems:'center',
+    justifyContent:'space-between', padding:'0 16px', flexShrink:0,
+  }},
+    h('div', { style: { display:'flex', gap:6 }},
+      modes.map(m => h(ModePill, { key:m.id, mode:m, active:activeMode===m.id, onClick:()=>onModeChange(m.id) }))
+    ),
+    h('div', { style: {
+      display:'flex', alignItems:'center', gap:5,
+      fontFamily:"'Barlow Condensed',sans-serif", fontSize:20, userSelect:'none',
+    }},
+      h('span', { style: { fontWeight:300, color:T.textAccent }}, 'elemental'),
+      h('span', { style: { fontWeight:500, color:T.textPrimary }}, 'design')
+    )
+  );
+}
+
+function PanelTab({ label, gradient, roundLeft, roundRight, icon, rightIcon, boldPart }) {
+  const r = T.radiusTab;
+  return h('div', { style: {
+    width:'100%', height:46, background:gradient,
+    borderRadius: (roundLeft?r:0)+'px '+(roundRight?r:0)+'px 0 0',
+    display:'flex', alignItems:'center', justifyContent:'space-between',
+    padding:'0 14px', boxSizing:'border-box', flexShrink:0,
+  }},
+    h('div', { style: { display:'flex', alignItems:'center', gap:8, fontFamily:"'Barlow',sans-serif", fontSize:16, fontWeight:500, color:T.textPrimary }},
+      icon && h('span', { style:{fontSize:14}}, icon),
+      h('span', null,
+        label,
+        boldPart && h(React.Fragment, null,
+          h('span', { style:{opacity:0.6}}, ' : '),
+          h('span', { style:{fontWeight:700}}, boldPart)
+        )
+      )
+    ),
+    rightIcon && h('span', { style:{fontSize:18, cursor:'pointer', opacity:0.7}}, rightIcon)
+  );
+}
+
+function CollapsedRail({ label, direction, onClick }) {
+  return h('div', { onClick, style: {
+    width:T.collapsedRail, height:'100%',
+    background: direction==='left' ? T.surfaceAgent : T.surfaceElements,
+    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+    cursor:'pointer', flexShrink:0,
+    borderRight: direction==='left' ? '1px solid '+T.surfaceCanvasDark : 'none',
+    borderLeft: direction==='right' ? '1px solid '+T.surfaceCanvasDark : 'none',
+  }},
+    h('span', { style: {
+      writingMode:'vertical-rl', transform:'rotate(180deg)',
+      fontFamily:"'Barlow',sans-serif", fontSize:13, fontWeight:500,
+      color:T.textMuted, letterSpacing:1, userSelect:'none',
+    }}, label)
+  );
+}
+
+function ChevronIndicator({ expanded, highlighted }) {
+  return h('div', { style: {
+    display:'flex', alignItems:'center', justifyContent:'center', gap:1,
+    padding:'3px 8px', borderRadius: highlighted?7:0,
+    background: highlighted ? T.brandCyanHighlight+'33' : 'transparent',
+    transition:'transform 0.2s ease',
+    transform: expanded ? 'rotate(90deg)' : 'none',
+  }},
+    [0,1,2].map(i => h('svg', { key:i, width:6, height:8, viewBox:'0 0 6 8' },
+      h('polygon', { points:'0,0 6,4 0,8', fill:T.textPrimary, opacity:0.5+i*0.2 })
+    ))
+  );
+}
+
+function ElementRow({ name, subtype, indent, children }) {
+  indent = indent || 0;
+  const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const icons = { shape:'\u25FB', information:'\u25C6', widget:'\u25C9', screen:'\u25A2' };
+  const bg = hovered ? grad(T.brandCyanHover, T.brandCyanHoverDeep) : grad(T.brandCyan, T.brandCyanDeep);
+
+  return h('div', { style:{ marginLeft: indent*T.spaceLg }},
+    h('div', {
+      onMouseEnter:()=>setHovered(true), onMouseLeave:()=>setHovered(false),
+      onClick:()=>setExpanded(!expanded),
+      style: {
+        background:bg, borderRadius:T.radiusButton, padding:'8px 10px', marginBottom:4,
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        cursor:'pointer', userSelect:'none', transition:'all 0.15s',
+      }
+    },
+      h('div', { style:{ display:'flex', alignItems:'center', gap:8 }},
+        h('span', { style:{ fontSize:14, opacity:0.7 }}, icons[subtype]||'\u25FB'),
+        h('div', null,
+          h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:12, fontWeight:300, color:T.textPrimary, opacity:0.8 }},
+            subtype.charAt(0).toUpperCase()+subtype.slice(1)
+          ),
+          h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:16, fontWeight:700, color:T.textPrimary }}, name)
+        )
+      ),
+      h(ChevronIndicator, { expanded, highlighted:hovered })
+    ),
+    expanded && children && h('div', { style:{ overflow:'hidden', animation:'slideDown 0.2s ease-out', paddingLeft:12, paddingBottom:8 }}, children)
+  );
+}
+
+function ParamGroupHeader({ label }) {
+  return h('div', { style: {
+    fontFamily:"'Barlow',sans-serif", fontSize:11, fontWeight:600,
+    color:T.textMuted, textTransform:'uppercase', letterSpacing:1.5,
+    padding:'10px 0 4px 0', borderBottom:'1px solid rgba(255,255,255,0.06)', marginBottom:4,
+  }}, label);
+}
+
+function ParamRow({ name, hasValue, children }) {
+  const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  return h('div', null,
+    h('div', {
+      onMouseEnter:()=>setHovered(true), onMouseLeave:()=>setHovered(false),
+      onClick:()=>setExpanded(!expanded),
+      style: {
+        background: hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+        borderRadius:T.radiusButton, padding:'7px 10px', marginBottom:3,
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        cursor:'pointer', userSelect:'none', transition:'background 0.15s',
+      }
+    },
+      h('div', { style:{ display:'flex', alignItems:'center', gap:6 }},
+        hasValue && h('span', { style:{ width:5, height:5, borderRadius:'50%', background:T.brandCyan, flexShrink:0 }}),
+        h('span', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:14, fontWeight:500, color:T.textPrimary, opacity:0.85 }}, name)
+      ),
+      h(ChevronIndicator, { expanded, highlighted:false })
+    ),
+    expanded && children && h('div', { style:{ padding:'8px 10px 8px 20px', animation:'slideDown 0.2s ease-out' }}, children)
+  );
+}
+
+function ThreeLevelControl({ label, value, min, max, unit }) {
+  unit = unit || 'pt';
+  const [localVal, setLocalVal] = useState(value);
+  const [isAuto, setIsAuto] = useState(true);
+
+  return h('div', { style:{ marginBottom:8 }},
+    h('div', { style:{ marginBottom:6 }},
+      h('button', { onClick:()=>{ setIsAuto(!isAuto); if(!isAuto) setLocalVal(value); }, style: {
+        background: isAuto ? grad(T.brandCyan,T.brandCyanDeep) : 'rgba(255,255,255,0.08)',
+        border:'none', borderRadius:12, padding:'3px 12px', color:T.textPrimary,
+        fontFamily:"'Barlow',sans-serif", fontSize:12, fontWeight:500, cursor:'pointer',
+      }}, 'Auto')
+    ),
+    h('div', { style:{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }},
+      h('span', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:12, color:T.textMuted, width:14 }}, label),
+      h('input', { type:'range', min:min, max:max, value:Math.min(Math.max(localVal,min),max),
+        onChange: function(e){ setIsAuto(false); setLocalVal(Number(e.target.value)); },
+        style:{ flex:1, accentColor:T.brandCyan, height:3 }
+      }),
+      h('span', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:12, color:T.textPrimary, width:36, textAlign:'right' }}, localVal)
+    ),
+    h('div', { style:{ display:'flex', alignItems:'center', gap:4 }},
+      h('input', { type:'number', value:localVal,
+        onChange: function(e){ var v=Number(e.target.value); if(!isNaN(v)){setIsAuto(false);setLocalVal(v);} },
+        style: {
+          width:60, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+          borderRadius:4, color:T.textPrimary, fontFamily:"'Barlow',sans-serif",
+          fontSize:12, padding:'3px 6px', outline:'none',
+        }
+      }),
+      h('span', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:11, color:T.textMuted }}, unit)
+    )
+  );
+}
+
+function AgentInputBar() {
+  const [text, setText] = useState('');
+  return h('div', { style:{ padding:'10px 15px', flexShrink:0 }},
+    h('div', { style: {
+      border:'1px solid '+T.grayBorder, borderRadius:T.radiusInput,
+      display:'flex', alignItems:'flex-end', padding:'6px 6px 6px 16px',
+      minHeight:42, background:'transparent',
+    }},
+      h('textarea', {
+        value:text, onChange:function(e){setText(e.target.value);},
+        placeholder:"let's talk...", rows:1,
+        style: {
+          flex:1, background:'transparent', border:'none', outline:'none',
+          color:T.textPrimary, fontFamily:"'Volkhov',serif", fontSize:16,
+          resize:'none', lineHeight:1.4, maxHeight:160, overflow:'auto',
+        }
+      }),
+      h('button', { style: {
+        width:30, height:30, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.4)',
+        background:'transparent', color:T.textPrimary, fontSize:14,
+        cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+        flexShrink:0, marginLeft:4,
+      }}, '\uD83C\uDFA4')
+    )
+  );
+}
+
+function AgentPanel() {
+  return h('div', { style:{ height:'100%', display:'flex', flexDirection:'column', background:T.surfaceAgent }},
+    h(PanelTab, { label:'Agent', icon:'\u2726', gradient:grad(T.surfaceTabAgentStart,T.surfaceTabAgentEnd,'to top'), roundLeft:false, roundRight:true }),
+    h('div', { style:{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', padding:'0 20px', textAlign:'center', overflow:'auto' }},
+      h('div', { style:{ fontFamily:"'Volkhov',serif", fontSize:28, color:T.textPrimary, lineHeight:1.3, maxWidth:260 }},
+        h('span', { style:{color:T.brandCyanBright}}, '\u2726'), ' What are you working on today?'
+      ),
+      h('div', { style:{ display:'flex', flexDirection:'column', gap:8, marginTop:24, width:'100%', maxWidth:240 }},
+        ['a Website','an App','a Component','Something else'].map(function(label){
+          return h('button', { key:label, style: {
+            background:grad(T.brandCyan,T.brandCyanDeep), border:'none', borderRadius:T.radiusButton,
+            padding:'8px 12px', color:T.textPrimary, fontFamily:"'Barlow',sans-serif",
+            fontSize:16, fontWeight:500, cursor:'pointer', textAlign:'left', transition:'opacity 0.15s',
+          }}, label);
+        })
+      )
+    ),
+    h(AgentInputBar)
+  );
+}
+
+function ElementsPanel({ hasContent }) {
+  return h('div', { style:{ height:'100%', display:'flex', flexDirection:'column', background:T.surfaceElements }},
+    h(PanelTab, { label:'Elements', icon:'\u2630', rightIcon:'\uFF0B',
+      gradient:grad(T.surfaceTabElementsStart,T.surfaceTabElementsEnd,'to top'), roundLeft:true, roundRight:true }),
+    h('div', { style:{ flex:1, overflow:'auto', padding:'8px 10px' }},
+      hasContent
+        ? h('div', null,
+            h(ElementRow, { name:'Hero Section', subtype:'shape' },
+              h(ParamGroupHeader, { label:'Structure' }),
+              h(ParamRow, { name:'Size', hasValue:true },
+                h(ThreeLevelControl, { label:'W', value:390, min:0, max:800 }),
+                h(ThreeLevelControl, { label:'H', value:320, min:0, max:800 })
+              ),
+              h(ParamRow, { name:'Padding', hasValue:false },
+                h(ThreeLevelControl, { label:'T', value:16, min:0, max:64 }),
+                h(ThreeLevelControl, { label:'B', value:16, min:0, max:64 })
+              ),
+              h(ParamRow, { name:'Corner Radius', hasValue:true },
+                h(ThreeLevelControl, { label:'R', value:12, min:0, max:60 })
+              ),
+              h(ParamGroupHeader, { label:'Content' }),
+              h(ParamRow, { name:'Color', hasValue:true },
+                h('div', { style:{ display:'flex', gap:6, flexWrap:'wrap', padding:'4px 0' }},
+                  ['#1E293B','#0F172A','#334155','#0EA5E9','#8B5CF6','#F43F5E','#10B981',T.grayPlaceholder].map(function(c){
+                    return h('div', { key:c, style:{ width:24, height:24, borderRadius:4, background:c, border:'1px solid rgba(255,255,255,0.15)', cursor:'pointer' }});
+                  })
+                )
+              ),
+              h(ParamGroupHeader, { label:'Behavior' }),
+              h(ParamRow, { name:'Animation', hasValue:false },
+                h('div', { style:{ display:'flex', gap:6 }},
+                  ['None','Fade','Slide','Scale'].map(function(p){
+                    return h('button', { key:p, style:{
+                      background: p==='None' ? grad(T.brandCyan,T.brandCyanDeep) : 'rgba(255,255,255,0.08)',
+                      border:'none', borderRadius:12, padding:'4px 10px', color:T.textPrimary,
+                      fontFamily:"'Barlow',sans-serif", fontSize:12, fontWeight:500, cursor:'pointer',
+                    }}, p);
+                  })
+                )
+              )
+            ),
+            h(ElementRow, { name:'Hero Image', subtype:'information', indent:1 },
+              h(ParamGroupHeader, { label:'Content' }),
+              h(ParamRow, { name:'Image', hasValue:false },
+                h('div', { style:{
+                  border:'1px dashed rgba(255,255,255,0.2)', borderRadius:6, padding:16,
+                  textAlign:'center', color:T.textMuted, fontFamily:"'Barlow',sans-serif", fontSize:13, cursor:'pointer',
+                }}, 'Drop image or click to browse')
+              )
+            ),
+            h(ElementRow, { name:'Hero Title', subtype:'information', indent:1 },
+              h(ParamGroupHeader, { label:'Content' }),
+              h(ParamRow, { name:'Text', hasValue:true },
+                h('div', null,
+                  h('input', { type:'text', defaultValue:'Welcome to Elemental', style:{
+                    width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+                    borderRadius:4, color:T.textPrimary, fontFamily:"'Volkhov',serif",
+                    fontSize:14, padding:'6px 8px', outline:'none', boxSizing:'border-box',
+                  }}),
+                  h('div', { style:{ display:'flex', gap:4, marginTop:6 }},
+                    ['Display','Title','Body','Label','Mono'].map(function(r){
+                      return h('button', { key:r, style:{
+                        background: r==='Title' ? grad(T.brandCyan,T.brandCyanDeep) : 'rgba(255,255,255,0.08)',
+                        border:'none', borderRadius:12, padding:'3px 8px', color:T.textPrimary,
+                        fontFamily:"'Barlow',sans-serif", fontSize:11, fontWeight:500, cursor:'pointer',
+                      }}, r);
+                    })
+                  )
+                )
+              )
+            ),
+            h(ElementRow, { name:'CTA Button', subtype:'widget', indent:1 },
+              h(ParamGroupHeader, { label:'Content' }),
+              h(ParamRow, { name:'Text', hasValue:true },
+                h('input', { type:'text', defaultValue:'Get Started', style:{
+                  width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+                  borderRadius:4, color:T.textPrimary, fontFamily:"'Volkhov',serif",
+                  fontSize:14, padding:'6px 8px', outline:'none', boxSizing:'border-box',
+                }})
+              ),
+              h(ParamGroupHeader, { label:'Behavior' }),
+              h(ParamRow, { name:'Interaction', hasValue:true },
+                h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:13, color:T.textMuted, padding:'4px 0' }},
+                  'Tap \u2192 ', h('span', { style:{color:T.brandCyanBright}}, 'not assigned')
+                )
+              )
+            )
+          )
+        : h('div', { style:{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', height:'100%', padding:'40px 20px', textAlign:'center' }},
+            h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:16, fontWeight:500, color:T.textPrimary, marginBottom:12 }}, 'Nothing here yet.'),
+            h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:14, fontWeight:300, color:T.textMuted, lineHeight:1.6, maxWidth:220 }},
+              'Tap ', h('span',{style:{fontWeight:600}},'\uFF0B'), ' to add a Screen or Component, or describe what you\'re building to the Agent.'
+            )
+          )
+    )
+  );
+}
+
+function CanvasPanel({ previewMode, hasContent }) {
+  return h('div', { style:{
+    height:'100%', display:'flex', flexDirection:'column',
+    background:grad(T.surfaceCanvasLight,T.surfaceCanvasDark,'to bottom'), position:'relative',
+  }},
+    !previewMode && h(PanelTab, {
+      label:'Component', boldPart: hasContent ? 'Hero Section' : undefined, icon:'\uD83D\uDC41', rightIcon:'\uFF0B',
+      gradient:grad(T.surfaceTabCanvasStart,T.surfaceTabCanvasEnd,'to top'), roundLeft:true, roundRight:true,
+    }),
+    h('div', { style:{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden' }},
+      hasContent
+        ? h('div', { style:{
+            width:390, height:320, borderRadius:12, background:'#1E293B',
+            border:'1px solid '+T.brandCyan+'44', display:'flex', flexDirection:'column',
+            alignItems:'center', justifyContent:'center', padding:24, position:'relative',
+            boxShadow:'0 0 40px '+T.brandCyan+'11',
+          }},
+            h('div', { style:{ position:'absolute', inset:-1, border:'1px solid '+T.brandCyan, borderRadius:12, pointerEvents:'none' }}),
+            h('div', { style:{ position:'absolute', bottom:-24, left:'50%', transform:'translateX(-50%)', fontFamily:"'Barlow',sans-serif", fontSize:11, color:T.textMuted, background:'rgba(0,0,0,0.6)', padding:'2px 8px', borderRadius:4 }}, '390'),
+            h('div', { style:{ position:'absolute', right:-32, top:'50%', transform:'translateY(-50%)', fontFamily:"'Barlow',sans-serif", fontSize:11, color:T.textMuted, background:'rgba(0,0,0,0.6)', padding:'2px 8px', borderRadius:4 }}, '320'),
+            h('div', { style:{ width:'100%', height:120, borderRadius:8, background:'rgba(255,255,255,0.05)', marginBottom:16, display:'flex', alignItems:'center', justifyContent:'center', color:T.textMuted, fontFamily:"'Barlow',sans-serif", fontSize:13 }}, 'Hero Image'),
+            h('div', { style:{ fontFamily:"'Volkhov',serif", fontSize:22, fontWeight:700, color:T.textPrimary, marginBottom:12 }}, 'Welcome to Elemental'),
+            h('div', { style:{ background:grad(T.brandCyan,T.brandCyanDeep), borderRadius:8, padding:'8px 20px', fontFamily:"'Barlow',sans-serif", fontSize:14, fontWeight:600, color:T.textPrimary }}, 'Get Started')
+          )
+        : h('div', { style:{ textAlign:'center' }},
+            h('div', { style:{
+              fontFamily:"'Volkhov',serif", fontSize:56, fontWeight:700, fontStyle:'italic',
+              background:grad(T.brandCyan,T.brandCyanDeep),
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', marginBottom:8,
+            }}, 'Hello!'),
+            h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:14, color:T.textMuted }}, "Tell the Agent what you'd like to build.")
+          )
+    )
+  );
+}
+
+function ResizeHandle({ onDrag }) {
+  var dragging = useRef(false);
+  var startX = useRef(0);
+  var onMouseDown = function(e) {
+    dragging.current = true;
+    startX.current = e.clientX;
+    e.preventDefault();
+    var onMove = function(ev) {
+      if(!dragging.current) return;
+      var dx = ev.clientX - startX.current;
+      startX.current = ev.clientX;
+      onDrag(dx);
+    };
+    var onUp = function() {
+      dragging.current = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  return h('div', { onMouseDown:onMouseDown, style: {
+    width:1, background:'rgba(255,255,255,0.08)', cursor:'col-resize',
+    position:'relative', flexShrink:0, zIndex:10,
+  }},
+    h('div', { style:{ position:'absolute', top:0, bottom:0, left:-6, right:-6 }})
+  );
+}
+
+function SettingsPanel() {
+  return h('div', { style:{ height:'100%', background:T.surfaceElements, display:'flex', flexDirection:'column' }},
+    h(PanelTab, { label:'Settings', icon:'\u2699',
+      gradient:grad(T.surfaceTabElementsStart,T.surfaceTabElementsEnd,'to top'), roundLeft:true, roundRight:true }),
+    h('div', { style:{ padding:16 }},
+      h('div', { style:{ marginBottom:16 }},
+        h('label', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:12, color:T.textMuted, display:'block', marginBottom:4 }}, 'Project Name'),
+        h('input', { type:'text', defaultValue:'My Project', style:{
+          width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+          borderRadius:4, color:T.textPrimary, fontFamily:"'Barlow',sans-serif",
+          fontSize:14, padding:'8px 10px', outline:'none', boxSizing:'border-box',
+        }})
+      ),
+      h('div', null,
+        h('label', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:12, color:T.textMuted, display:'block', marginBottom:4 }}, 'Platform'),
+        h('div', { style:{ display:'flex', gap:4 }},
+          ['iOS','macOS','Web'].map(function(p){
+            return h('button', { key:p, style:{
+              flex:1, background: p==='Web' ? grad(T.brandCyan,T.brandCyanDeep) : 'rgba(255,255,255,0.08)',
+              border:'none', borderRadius:4, padding:'6px 0', color:T.textPrimary,
+              fontFamily:"'Barlow',sans-serif", fontSize:13, fontWeight:500, cursor:'pointer',
+            }}, p);
+          })
+        )
+      )
+    )
+  );
+}
+
+function CodePanel() {
+  return h('div', { style:{ height:'100%', background:T.surfaceElements, display:'flex', flexDirection:'column' }},
+    h(PanelTab, { label:'Code', icon:'</>',
+      gradient:grad(T.surfaceTabElementsStart,T.surfaceTabElementsEnd,'to top'), roundLeft:true, roundRight:true }),
+    h('div', { style:{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }},
+      h('div', { style:{ fontFamily:"'Barlow',sans-serif", fontSize:14, color:T.textMuted, textAlign:'center' }}, 'Select an object to see its code')
+    )
+  );
+}
+
+function App() {
+  var _s = useState('agent'), mode = _s[0], setMode = _s[1];
+  var _a = useState(T.agentDefault), agentW = _a[0], setAgentW = _a[1];
+  var _e = useState(T.elementsDefault), elemW = _e[0], setElemW = _e[1];
+  var _ac = useState(false), agentCol = _ac[0], setAgentCol = _ac[1];
+  var _ec = useState(false), elemCol = _ec[0], setElemCol = _ec[1];
+  var _hc = useState(true), hasContent = _hc[0], setHasContent = _hc[1];
+
+  var isPreview = mode === 'preview';
+
+  useEffect(function() {
+    var handler = function(e) {
+      if(e.metaKey && e.shiftKey) {
+        var num = parseInt(e.key);
+        if(num>=1 && num<=5) { e.preventDefault(); setMode(modes[num-1].id); }
+      }
+      if(e.metaKey && !e.shiftKey) {
+        if(e.key==='1') { e.preventDefault(); setAgentCol(function(c){return !c;}); }
+        if(e.key==='2') { e.preventDefault(); setElemCol(function(c){return !c;}); }
+        if(e.key==='0') { e.preventDefault(); setAgentW(T.agentDefault); setElemW(T.elementsDefault); setAgentCol(false); setElemCol(false); }
+      }
+      if(e.key==='Escape' && isPreview) setMode('agent');
+    };
+    window.addEventListener('keydown', handler);
+    return function() { window.removeEventListener('keydown', handler); };
+  }, [isPreview]);
+
+  var handleAgentResize = useCallback(function(dx){ setAgentW(function(w){return Math.max(T.agentMin,Math.min(T.agentMax,w+dx));}); }, []);
+  var handleElemResize = useCallback(function(dx){ setElemW(function(w){return Math.max(T.elementsMin,Math.min(T.elementsMax,w+dx));}); }, []);
+
+  var showAgent = !isPreview && !agentCol;
+  var showElements = !isPreview && !elemCol;
+  var showSettings = mode === 'settings';
+  var showCode = mode === 'code';
+
+  var centerPanel;
+  if(showSettings) centerPanel = h(SettingsPanel);
+  else if(showCode) centerPanel = h(CodePanel);
+  else centerPanel = h(ElementsPanel, { hasContent:hasContent });
+
+  return h('div', { style:{
+    width:'100%', height:'100vh', display:'flex', flexDirection:'column',
+    background:T.surfaceCanvasDark, color:T.textPrimary, overflow:'hidden',
+    fontFamily:"'Barlow',sans-serif",
+  }},
+    h(ModeBar, { activeMode:mode, onModeChange:setMode }),
+    h('div', { style:{ flex:1, display:'flex', overflow:'hidden' }},
+      !isPreview && (showAgent
+        ? h('div', { style:{ width:agentW, flexShrink:0, height:'100%' }}, h(AgentPanel))
+        : h(CollapsedRail, { label:'Agent', direction:'left', onClick:function(){setAgentCol(false);} })
+      ),
+      !isPreview && showAgent && h(ResizeHandle, { onDrag:handleAgentResize }),
+      !isPreview && (showElements
+        ? h('div', { style:{ width:elemW, flexShrink:0, height:'100%' }}, centerPanel)
+        : h(CollapsedRail, { label:'Elements', direction:'right', onClick:function(){setElemCol(false);} })
+      ),
+      !isPreview && showElements && h(ResizeHandle, { onDrag:handleElemResize }),
+      h('div', { style:{ flex:1, height:'100%', minWidth:0 }}, h(CanvasPanel, { previewMode:isPreview, hasContent:hasContent }))
+    ),
+    h('button', { onClick:function(){setHasContent(function(c){return !c;});}, style:{
+      position:'fixed', bottom:12, right:12, background:'rgba(255,255,255,0.1)',
+      border:'1px solid rgba(255,255,255,0.15)', borderRadius:6, padding:'6px 12px',
+      color:T.textMuted, fontFamily:"'Barlow',sans-serif", fontSize:11, cursor:'pointer', zIndex:100,
+    }}, hasContent ? 'Show empty state' : 'Show with content')
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>

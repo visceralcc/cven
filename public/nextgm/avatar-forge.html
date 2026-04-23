@@ -55,628 +55,126 @@
     background: var(--surface);
   }
 
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .logo {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: -0.5px;
-    color: var(--accent);
-  }
-
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; letter-spacing: -0.5px; color: var(--accent); }
   .logo span { color: var(--text-dim); font-weight: 400; }
-
-  .header-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--text-muted);
-  }
-
+  .header-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
   .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
   .status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.5s ease infinite; }
   .status-dot.error { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .cost-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    padding: 5px 10px;
-    border-radius: 6px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-  }
-
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .cost-badge { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim); }
   .cost-badge strong { color: var(--accent); }
 
-  /* Sidebar / Config Panel */
-  .sidebar {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 24px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 500; color: var(--text-dim); }
+  .field input, .field select, .field textarea { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; transition: border-color 0.2s; outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent-dim); }
+  .field textarea { resize: vertical; min-height: 80px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-  .section-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .field label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-dim);
-  }
-
-  .field input, .field select, .field textarea {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 12px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-
-  .field input:focus, .field select:focus, .field textarea:focus {
-    border-color: var(--accent-dim);
-  }
-
-  .field textarea {
-    resize: vertical;
-    min-height: 80px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    line-height: 1.6;
-  }
-
-  .field-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .field .hint {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-
-  /* Model selector */
-  .model-options {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .model-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
+  .model-options { display: flex; flex-direction: column; gap: 6px; }
+  .model-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; transition: all 0.2s; }
   .model-option:hover { border-color: var(--border-hover); }
   .model-option.selected { border-color: var(--accent-dim); background: rgba(58, 125, 32, 0.06); }
-
   .model-option input { display: none; }
+  .model-radio { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .model-option.selected .model-radio { border-color: var(--accent); }
+  .model-option.selected .model-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .model-info { flex: 1; min-width: 0; }
+  .model-name { font-size: 13px; font-weight: 600; }
+  .model-meta { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
 
-  .model-radio {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .model-option.selected .model-radio {
-    border-color: var(--accent);
-  }
-
-  .model-option.selected .model-radio::after {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
-
-  .model-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .model-name {
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .model-meta {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* Prompt matrix */
-  .matrix-section {
-    border-top: 1px solid var(--border);
-    padding-top: 20px;
-  }
-
-  .tag-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 6px;
-  }
-
-  .tag {
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 5px;
-    background: var(--surface-3);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
+  .matrix-section { border-top: 1px solid var(--border); padding-top: 20px; }
+  .tag-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .tag { font-size: 11px; padding: 4px 8px; border-radius: 5px; background: var(--surface-3); color: var(--text-muted); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; font-family: 'JetBrains Mono', monospace; }
   .tag:hover { border-color: var(--border-hover); color: var(--text-dim); }
   .tag.active { background: #16B201; border-color: #16B201; color: #fff; }
 
-  /* Buttons */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    border-radius: var(--radius);
-    border: none;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    width: 100%;
-  }
-
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: var(--radius); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; }
   .btn-primary:hover { background: #4a9928; transform: translateY(-1px); }
   .btn-primary:active { transform: translateY(0); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .btn-secondary {
-    background: var(--surface-3);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
+  .btn-secondary { background: var(--surface-3); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { border-color: var(--border-hover); }
-
-  .btn-danger {
-    background: rgba(200, 48, 48, 0.08);
-    color: var(--danger);
-    border: 1px solid rgba(200, 48, 48, 0.2);
-  }
-
+  .btn-danger { background: rgba(200, 48, 48, 0.08); color: var(--danger); border: 1px solid rgba(200, 48, 48, 0.2); }
   .btn-sm { padding: 7px 12px; font-size: 12px; }
 
-  /* Main content */
-  .main {
-    padding: 24px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+  .main { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
 
-  /* Progress bar */
-  .progress-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-  }
-
-  .progress-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  .progress-title {
-    font-weight: 600;
-    font-size: 14px;
-  }
-
-  .progress-stats {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--text-dim);
-    display: flex;
-    gap: 16px;
-  }
-
-  .progress-track {
-    height: 6px;
-    background: var(--surface-3);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 8px rgba(58, 125, 32, 0.3);
-  }
-
+  .progress-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .progress-title { font-weight: 600; font-size: 14px; }
+  .progress-stats { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); display: flex; gap: 16px; }
+  .progress-track { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; box-shadow: 0 0 8px rgba(58, 125, 32, 0.3); }
   .progress-fill.error { background: var(--danger); box-shadow: 0 0 12px rgba(245, 74, 74, 0.3); }
 
-  /* Grid */
-  .grid-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .grid-controls-left {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-  }
-
-  .image-cell {
-    aspect-ratio: 1;
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    position: relative;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
+  .grid-controls { display: flex; justify-content: space-between; align-items: center; }
+  .grid-controls-left { display: flex; gap: 8px; align-items: center; }
+  .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .image-cell { aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); position: relative; cursor: pointer; transition: all 0.2s; }
   .image-cell:hover { border-color: var(--border-hover); transform: scale(1.02); }
-
-  .image-cell img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .image-cell .cell-index {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
-    background: rgba(0,0,0,0.55);
-    color: #fff;
-    padding: 2px 5px;
-    border-radius: 3px;
-  }
-
-  .image-cell.generating {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .image-cell.generating::after {
-    content: '';
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
+  .image-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .image-cell .cell-index { position: absolute; bottom: 4px; left: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; background: rgba(0,0,0,0.55); color: #fff; padding: 2px 5px; border-radius: 3px; }
+  .image-cell.generating { display: flex; align-items: center; justify-content: center; }
+  .image-cell.generating::after { content: ''; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   .image-cell.error { border-color: rgba(245, 74, 74, 0.3); }
-  .image-cell.error::after {
-    content: '!';
-    color: var(--danger);
-    font-weight: 700;
-    font-size: 18px;
-  }
-
+  .image-cell.error::after { content: '!'; color: var(--danger); font-weight: 700; font-size: 18px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Log panel */
-  .log-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-
-  .log-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-  }
-
-  .log-header h3 {
-    font-size: 13px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .log-content {
-    max-height: 200px;
-    overflow-y: auto;
-    padding: 12px 16px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    line-height: 1.8;
-    color: var(--text-dim);
-  }
-
+  .log-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .log-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .log-header h3 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .log-content { max-height: 200px; overflow-y: auto; padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--text-dim); }
   .log-content .log-line { white-space: pre-wrap; word-break: break-all; }
   .log-content .log-line.error { color: var(--danger); }
   .log-content .log-line.success { color: var(--success); }
   .log-content .log-line.info { color: var(--text-muted); }
 
-  /* Empty state */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 80px 40px;
-    gap: 12px;
-    flex: 1;
-  }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 40px; gap: 12px; flex: 1; }
+  .empty-state .icon { width: 56px; height: 56px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 8px; }
+  .empty-state h2 { font-size: 18px; font-weight: 600; }
+  .empty-state p { font-size: 13px; color: var(--text-dim); max-width: 360px; line-height: 1.6; }
 
-  .empty-state .icon {
-    width: 56px; height: 56px;
-    border-radius: 14px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    margin-bottom: 8px;
-  }
-
-  .empty-state h2 {
-    font-size: 18px;
-    font-weight: 600;
-  }
-
-  .empty-state p {
-    font-size: 13px;
-    color: var(--text-dim);
-    max-width: 360px;
-    line-height: 1.6;
-  }
-
-  /* Preview modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; max-width: 540px; width: 90%; max-height: 85vh; overflow-y: auto; }
+  .modal-preview img { width: 100%; border-radius: var(--radius); margin-bottom: 16px; }
+  .modal-prompt { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: var(--text-dim); background: var(--surface-2); padding: 12px; border-radius: var(--radius); margin-bottom: 16px; max-height: 120px; overflow-y: auto; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    max-width: 540px;
-    width: 90%;
-    max-height: 85vh;
-    overflow-y: auto;
-  }
+  .new-batch-banner { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: var(--radius); background: rgba(42, 138, 74, 0.12); border: 1px solid rgba(42, 138, 74, 0.35); font-size: 13px; font-weight: 600; color: var(--success); font-family: 'JetBrains Mono', monospace; animation: bannerFade 0.4s ease; }
+  @keyframes bannerFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .batch-history { display: flex; flex-direction: column; gap: 16px; }
+  .batch-section { display: flex; flex-direction: column; gap: 8px; }
+  .batch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .batch-label.current { color: var(--success); border-bottom-color: rgba(42, 138, 74, 0.3); }
 
-  .modal-preview img {
-    width: 100%;
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-  }
+  .ref-thumb { aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 2px solid var(--border); position: relative; cursor: default; }
+  .ref-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ref-thumb .ref-label { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'JetBrains Mono', monospace; font-size: 7px; text-align: center; background: rgba(0,0,0,0.55); color: #fff; padding: 2px 0; letter-spacing: 0.5px; text-transform: uppercase; }
 
-  .modal-prompt {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    line-height: 1.6;
-    color: var(--text-dim);
-    background: var(--surface-2);
-    padding: 12px;
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-    max-height: 120px;
-    overflow-y: auto;
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
-
-  /* New batch flash banner */
-  .new-batch-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
-    border-radius: var(--radius);
-    background: rgba(42, 138, 74, 0.12);
-    border: 1px solid rgba(42, 138, 74, 0.35);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--success);
-    font-family: 'JetBrains Mono', monospace;
-    animation: bannerFade 0.4s ease;
-  }
-
-  @keyframes bannerFade {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Batch history */
-  .batch-history {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .batch-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .batch-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .batch-label.current {
-    color: var(--success);
-    border-bottom-color: rgba(42, 138, 74, 0.3);
-  }
-
-  /* Style Board */
-  .ref-thumb {
-    aspect-ratio: 1;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 2px solid var(--border);
-    position: relative;
-    cursor: default;
-  }
-
-  .ref-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .ref-thumb .ref-label {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 7px;
-    text-align: center;
-    background: rgba(0,0,0,0.55);
-    color: #fff;
-    padding: 2px 0;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-  /* Responsive */
   @media (max-width: 900px) {
-    .app {
-      grid-template-columns: 1fr;
-    }
-    .sidebar {
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      max-height: 50vh;
-    }
+    .app { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
   }
 </style>
 </head>
 <body>
 
 <div class="app" id="app">
-  <!-- Header -->
   <div class="header">
     <div class="header-left">
       <div class="logo">NEXTGM <span>/ avatar forge</span></div>
@@ -691,11 +189,7 @@
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div class="sidebar">
-
-
-
     <div>
       <div class="section-label">Model</div>
       <div class="model-options">
@@ -774,14 +268,13 @@
       <div class="section-label">Style Template</div>
       <div class="field">
         <label>Base Prompt</label>
-        <textarea id="basePrompt">Digital illustration portrait of a {ethnicity} American football player, age {age}, {hairstyle}, {facial_hair}, {accessories}, {body_type}, {build}, wearing a plain neutral brown-gray crew neck t-shirt over a white undershirt, {expression}, {skin_tone}, stylized semi-realistic cartoon art style with bold outlines, cell-shaded coloring, slight caricature proportions with strong jaw, white clean background, head and upper chest visible, front-facing portrait</textarea>
+        <textarea id="basePrompt">Digital illustration portrait of a {ethnicity} American football player, age {age}, {hairstyle}, {facial_hair}, {accessories}, {body_type}, {build}, wearing a plain white crew neck t-shirt, {expression}, {skin_tone}, stylized semi-realistic cartoon art style with bold outlines, cell-shaded coloring, slight caricature proportions with strong jaw, white clean background, head and upper chest visible, front-facing portrait</textarea>
         <div class="hint">Use {ethnicity}, {age}, {hairstyle}, {facial_hair}, {accessories}, {body_type}, {build}, {expression}, {skin_tone} as variables</div>
       </div>
     </div>
 
     <div class="matrix-section">
       <div class="section-label">Variation Matrix</div>
-
       <div class="field">
         <label>Ethnicities</label>
         <div class="tag-group" id="tagEthnicity">
@@ -793,7 +286,6 @@
           <span class="tag" data-val="mixed-race biracial">Mixed</span>
         </div>
       </div>
-
       <div class="field" style="margin-top:12px">
         <label>Hairstyles</label>
         <div class="tag-group" id="tagHairstyle">
@@ -813,7 +305,6 @@
           <span class="tag" data-val="blonde crop hair">blonde crop</span>
         </div>
       </div>
-
       <div class="field" style="margin-top:12px">
         <label>Facial Hair</label>
         <div class="tag-group" id="tagFacialHair">
@@ -825,7 +316,6 @@
           <span class="tag" data-val="salt-and-pepper gray-flecked goatee">salt & pepper</span>
         </div>
       </div>
-
       <div class="field" style="margin-top:12px">
         <label>Body Type</label>
         <div class="tag-group" id="tagBodyType">
@@ -837,7 +327,6 @@
           <span class="tag" data-val="round heavyset body">round</span>
         </div>
       </div>
-
       <div class="field" style="margin-top:12px">
         <label>Accessories</label>
         <div class="tag-group" id="tagAccessories">
@@ -860,7 +349,6 @@
     <button class="btn btn-secondary btn-sm" onclick="downloadAll()" id="btnDownload" disabled>Download All as ZIP</button>
   </div>
 
-  <!-- Main Content -->
   <div class="main" id="mainContent">
     <div class="empty-state" id="emptyState">
       <div class="icon">🏈</div>
@@ -874,7 +362,6 @@
   </div>
 </div>
 
-<!-- Preview Modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-preview"><img id="modalImg" src="" /></div>
@@ -887,28 +374,16 @@
 </div>
 
 <script>
-  // ─── State ──────────────────────────────────────────
   let state = {
-    running: false,
-    paused: false,
-    generated: [],       // {url, prompt, index, blob}
-    errors: [],
-    total: 0,
-    completed: 0,
-    failed: 0,
-    abortController: null,
-    currentModalUrl: null,   // store URL directly, not index — fixes modal flicker
-    batchHistory: [],        // last 3 completed batches [{timestamp, images:[]}]
+    running: false, paused: false, generated: [], errors: [], total: 0, completed: 0, failed: 0,
+    abortController: null, currentModalUrl: null, batchHistory: [],
   };
 
   const PRICE_MAP = {
-    'fal-ai/flux/schnell': 0.003,
-    'fal-ai/flux/dev': 0.025,
-    'fal-ai/flux-2/pro': 0.03,
-    'fal-ai/flux-pro/kontext': 0.04,
+    'fal-ai/flux/schnell': 0.003, 'fal-ai/flux/dev': 0.025,
+    'fal-ai/flux-2/pro': 0.03, 'fal-ai/flux-pro/kontext': 0.04,
   };
 
-  // ─── Style References ────────────────────────────
   const STYLE_REFS = {
     'Black': [
       '/nextgm/refs/black/01_black_buzzcut.png',
@@ -940,50 +415,33 @@
       '/nextgm/refs/white/12_white_wavy.png',
       '/nextgm/refs/white/13_white_wavy.png',
     ],
-    'Hispanic Latino': [
-      '/nextgm/refs/hispanic/04_hispanic_manbun.png',
-    ],
+    'Hispanic Latino': ['/nextgm/refs/hispanic/04_hispanic_manbun.png'],
     'Polynesian Samoan': [],
-    'Asian': [
-      '/nextgm/refs/asian/08_asian_spiky.png',
-    ],
-    'mixed-race biracial': [
-      '/nextgm/refs/mixed/10_mixed_dreads.png',
-    ],
+    'Asian': ['/nextgm/refs/asian/08_asian_spiky.png'],
+    'mixed-race biracial': ['/nextgm/refs/mixed/10_mixed_dreads.png'],
   };
 
-  // Ethnicity display labels (short names for UI)
   const ETH_LABELS = {
-    'Black': 'Black',
-    'White': 'White',
-    'Hispanic Latino': 'Hispanic',
-    'Polynesian Samoan': 'Polynesian',
-    'Asian': 'Asian',
-    'mixed-race biracial': 'Mixed',
+    'Black': 'Black', 'White': 'White', 'Hispanic Latino': 'Hispanic',
+    'Polynesian Samoan': 'Polynesian', 'Asian': 'Asian', 'mixed-race biracial': 'Mixed',
   };
 
   function renderStyleBoard() {
     const board = document.getElementById('styleBoard');
     board.innerHTML = '';
     const activeEthnicities = getActiveTags('tagEthnicity');
-
     for (const [eth, refs] of Object.entries(STYLE_REFS)) {
       const isActive = activeEthnicities.includes(eth);
       const label = ETH_LABELS[eth] || eth;
       const count = refs.length;
-
       const section = document.createElement('div');
       section.style.cssText = `opacity:${isActive ? '1' : '0.35'}; transition:opacity 0.2s;`;
-
-      // Row header: ethnicity name + count badge
       const header = document.createElement('div');
       header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;';
       header.innerHTML = `
         <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:${isActive ? 'var(--text-dim)' : 'var(--text-muted)'}">${label}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:4px;background:${count === 0 ? 'rgba(200,48,48,0.1)' : 'rgba(58,125,32,0.1)'};color:${count === 0 ? 'var(--danger)' : 'var(--success)'}">${count === 0 ? 'no refs' : count + ' ref' + (count === 1 ? '' : 's')}</span>
-      `;
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:4px;background:${count === 0 ? 'rgba(200,48,48,0.1)' : 'rgba(58,125,32,0.1)'};color:${count === 0 ? 'var(--danger)' : 'var(--success)'}">${count === 0 ? 'no refs' : count + ' ref' + (count === 1 ? '' : 's')}</span>`;
       section.appendChild(header);
-
       if (count === 0) {
         const empty = document.createElement('div');
         empty.style.cssText = 'font-size:11px;color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;padding:6px 8px;border:1px dashed var(--border);border-radius:6px;';
@@ -1001,50 +459,33 @@
         }
         section.appendChild(grid);
       }
-
       board.appendChild(section);
     }
   }
-
   renderStyleBoard();
 
   function getRefForEthnicity(ethnicity) {
     const refs = STYLE_REFS[ethnicity];
-    // If no refs for this ethnicity, do NOT fall back to other ethnicities —
-    // that's what was causing mixed outputs. Return null instead.
     if (!refs || refs.length === 0) return null;
     return window.location.origin + refs[Math.floor(Math.random() * refs.length)];
   }
 
-  // ─── Helpers ────────────────────────────────────────
-  function getActiveTags(id) {
-    return [...document.querySelectorAll(`#${id} .tag.active`)].map(t => t.dataset.val);
-  }
-
-  function pickRandom(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  function getModel() {
-    return document.querySelector('input[name="model"]:checked').value;
-  }
-
+  function getActiveTags(id) { return [...document.querySelectorAll(`#${id} .tag.active`)].map(t => t.dataset.val); }
+  function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function getModel() { return document.querySelector('input[name="model"]:checked').value; }
   function updateCostEstimate() {
     const batch = parseInt(document.getElementById('batchSize').value) || 0;
     const price = PRICE_MAP[getModel()] || 0.003;
     document.getElementById('costEstimate').textContent = `$${(batch * price).toFixed(2)}`;
   }
 
-  // ─── Tag toggles ───────────────────────────────────
   document.querySelectorAll('.tag-group .tag').forEach(tag => {
     tag.addEventListener('click', () => {
       tag.classList.toggle('active');
-      // Re-render style board when ethnicity tags change
       if (tag.closest('#tagEthnicity')) renderStyleBoard();
     });
   });
 
-  // ─── Model selector ────────────────────────────────
   document.querySelectorAll('.model-option').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
@@ -1057,33 +498,16 @@
   document.getElementById('batchSize').addEventListener('input', updateCostEstimate);
   updateCostEstimate();
 
-  // ─── Build Prompts ─────────────────────────────────
-  const AGES = ['21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38'];
-  const BUILDS = [
-    'lean athletic neck',
-    'muscular neck and broad shoulders',
-    'very thick muscular neck and broad shoulders',
-    'thick muscular neck',
-    'lean neck'
-  ];
-  const EXPRESSIONS = [
-    'confident slight smile',
-    'serious focused expression',
-    'calm confident expression',
-    'intense focused expression',
-    'relaxed friendly slight smirk',
-    'determined expression',
-    'youthful eager smile',
-    'wise veteran stoic expression',
-    'weathered veteran confident expression'
-  ];
+  const AGES = ['21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38'];
+  const BUILDS = ['lean athletic neck','muscular neck and broad shoulders','very thick muscular neck and broad shoulders','thick muscular neck','lean neck'];
+  const EXPRESSIONS = ['confident slight smile','serious focused expression','calm confident expression','intense focused expression','relaxed friendly slight smirk','determined expression','youthful eager smile','wise veteran stoic expression','weathered veteran confident expression'];
   const SKIN_TONES_MAP = {
-    'Black': ['warm dark brown skin tones', 'deep dark brown skin tones', 'medium brown skin tones', 'rich dark skin tones'],
-    'White': ['fair skin tones', 'fair pinkish skin tones', 'light skin tones', 'tan skin tones'],
-    'Hispanic Latino': ['olive tan skin tones', 'warm tan skin tones', 'light brown skin tones', 'medium tan skin tones'],
-    'Polynesian Samoan': ['brown skin tones', 'warm brown skin tones', 'deep tan skin tones'],
-    'Asian': ['light tan East Asian skin tones', 'warm tan skin tones', 'light skin tones'],
-    'mixed-race biracial': ['light caramel skin tones with freckles', 'warm olive skin tones', 'medium tan skin tones'],
+    'Black': ['warm dark brown skin tones','deep dark brown skin tones','medium brown skin tones','rich dark skin tones'],
+    'White': ['fair skin tones','fair pinkish skin tones','light skin tones','tan skin tones'],
+    'Hispanic Latino': ['olive tan skin tones','warm tan skin tones','light brown skin tones','medium tan skin tones'],
+    'Polynesian Samoan': ['brown skin tones','warm brown skin tones','deep tan skin tones'],
+    'Asian': ['light tan East Asian skin tones','warm tan skin tones','light skin tones'],
+    'mixed-race biracial': ['light caramel skin tones with freckles','warm olive skin tones','medium tan skin tones'],
   };
 
   function buildPrompt(template) {
@@ -1092,64 +516,41 @@
     const facialHairs = getActiveTags('tagFacialHair');
     const accessories = getActiveTags('tagAccessories');
     const bodyTypes = getActiveTags('tagBodyType');
-
-    if (!ethnicities.length || !hairstyles.length || !facialHairs.length || !accessories.length || !bodyTypes.length) {
-      return null;
-    }
-
+    if (!ethnicities.length || !hairstyles.length || !facialHairs.length || !accessories.length || !bodyTypes.length) return null;
     const ethnicity = pickRandom(ethnicities);
     const skinTones = SKIN_TONES_MAP[ethnicity] || ['natural skin tones'];
-
     const prompt = template
-      .replace('{ethnicity}', ethnicity)
-      .replace('{age}', pickRandom(AGES))
-      .replace('{hairstyle}', pickRandom(hairstyles))
-      .replace('{facial_hair}', pickRandom(facialHairs))
-      .replace('{accessories}', pickRandom(accessories))
-      .replace('{body_type}', pickRandom(bodyTypes))
-      .replace('{build}', pickRandom(BUILDS))
-      .replace('{expression}', pickRandom(EXPRESSIONS))
+      .replace('{ethnicity}', ethnicity).replace('{age}', pickRandom(AGES))
+      .replace('{hairstyle}', pickRandom(hairstyles)).replace('{facial_hair}', pickRandom(facialHairs))
+      .replace('{accessories}', pickRandom(accessories)).replace('{body_type}', pickRandom(bodyTypes))
+      .replace('{build}', pickRandom(BUILDS)).replace('{expression}', pickRandom(EXPRESSIONS))
       .replace('{skin_tone}', pickRandom(skinTones));
-
     return { prompt, ethnicity };
   }
 
-  // ─── Log ───────────────────────────────────────────
   let logLines = [];
-
   function log(msg, type = '') {
     const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
     logLines.push({ msg: `[${ts}] ${msg}`, type });
     updateLogUI();
   }
-
   function updateLogUI() {
     const el = document.getElementById('logContent');
     if (!el) return;
-    el.innerHTML = logLines.slice(-100).map(l =>
-      `<div class="log-line ${l.type}">${l.msg}</div>`
-    ).join('');
+    el.innerHTML = logLines.slice(-100).map(l => `<div class="log-line ${l.type}">${l.msg}</div>`).join('');
     el.scrollTop = el.scrollHeight;
   }
 
-  // ─── UI Updates ────────────────────────────────────
   function setStatus(status, text) {
-    const dot = document.getElementById('statusDot');
-    dot.className = 'status-dot ' + status;
+    document.getElementById('statusDot').className = 'status-dot ' + status;
     document.getElementById('statusText').textContent = text;
   }
 
   function renderMain() {
     const main = document.getElementById('mainContent');
-    if (state.generated.length === 0 && !state.running) {
-      document.getElementById('emptyState').style.display = '';
-      return;
-    }
-
+    if (state.generated.length === 0 && !state.running) { document.getElementById('emptyState').style.display = ''; return; }
     const existing = document.getElementById('emptyState');
     if (existing) existing.style.display = 'none';
-
-    // Ensure structure exists
     if (!document.getElementById('progressSection')) {
       main.innerHTML = `
         <div class="progress-section" id="progressSection">
@@ -1178,240 +579,107 @@
             <span style="font-size:11px;color:var(--text-muted)" id="logCount">0 entries</span>
           </div>
           <div class="log-content" id="logContent"></div>
-        </div>
-      `;
+        </div>`;
     }
-
-    // Update progress
     const pct = state.total > 0 ? ((state.completed + state.failed) / state.total * 100) : 0;
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressCount').textContent = `${state.completed} / ${state.total}`;
     document.getElementById('gridCount').textContent = state.generated.length;
     document.getElementById('logCount').textContent = logLines.length + ' entries';
-
-    if (state.failed > 0) {
-      const el = document.getElementById('progressFailed');
-      el.style.display = '';
-      el.textContent = state.failed + ' failed';
-    }
-
-    if (!state.running && state.completed + state.failed >= state.total && state.total > 0) {
-      document.getElementById('progressTitle').textContent = 'Complete';
-    }
-
-    // Update grid — append only new cells
-    // IMPORTANT: capture url/prompt/num as const at cell-creation time
-    // so the onclick closure holds stable values, not a shifting index.
+    if (state.failed > 0) { const el = document.getElementById('progressFailed'); el.style.display = ''; el.textContent = state.failed + ' failed'; }
+    if (!state.running && state.completed + state.failed >= state.total && state.total > 0) document.getElementById('progressTitle').textContent = 'Complete';
     const grid = document.getElementById('imageGrid');
     const existingCells = grid.children.length;
     for (let i = existingCells; i < state.generated.length; i++) {
       const item = state.generated[i];
-      const capturedUrl = item.url;
-      const capturedPrompt = item.prompt;
-      const capturedNum = item.index + 1;
+      const capturedUrl = item.url, capturedPrompt = item.prompt, capturedNum = item.index + 1;
       const cell = document.createElement('div');
       cell.className = 'image-cell';
       cell.onclick = () => openModal(capturedUrl, capturedPrompt, capturedNum);
-      cell.innerHTML = `
-        <img src="${item.url}" loading="lazy" />
-        <div class="cell-index">#${capturedNum}</div>
-      `;
+      cell.innerHTML = `<img src="${item.url}" loading="lazy" /><div class="cell-index">#${capturedNum}</div>`;
       grid.appendChild(cell);
     }
   }
 
-  function toggleLog() {
-    const lc = document.getElementById('logContent');
-    lc.style.display = lc.style.display === 'none' ? '' : 'none';
-  }
+  function toggleLog() { const lc = document.getElementById('logContent'); lc.style.display = lc.style.display === 'none' ? '' : 'none'; }
 
-  // ─── Modal ─────────────────────────────────────────
-  // Store the actual url+prompt on click rather than an index —
-  // indexes shift as images arrive concurrently, causing flicker.
   function openModal(url, prompt, displayNum) {
     if (!url) return;
-    // Freeze these values into the modal immediately
-    const img = document.getElementById('modalImg');
-    img.src = '';
-    img.src = url;
+    const img = document.getElementById('modalImg'); img.src = ''; img.src = url;
     document.getElementById('modalPrompt').textContent = prompt;
-    state.currentModalUrl = url;
-    state.currentModalDisplayNum = displayNum;
+    state.currentModalUrl = url; state.currentModalDisplayNum = displayNum;
     document.getElementById('modalOverlay').classList.add('active');
   }
-
-  function closeModal(e) {
-    if (e && e.target !== e.currentTarget) return;
-    document.getElementById('modalOverlay').classList.remove('active');
-  }
-
+  function closeModal(e) { if (e && e.target !== e.currentTarget) return; document.getElementById('modalOverlay').classList.remove('active'); }
   function downloadSingle() {
     if (!state.currentModalUrl) return;
-    const a = document.createElement('a');
-    a.href = state.currentModalUrl;
-    a.download = `nextgm_avatar_${String(state.currentModalDisplayNum).padStart(4, '0')}.png`;
-    a.click();
+    const a = document.createElement('a'); a.href = state.currentModalUrl;
+    a.download = `nextgm_avatar_${String(state.currentModalDisplayNum).padStart(4, '0')}.png`; a.click();
   }
 
-  // ─── API Call ──────────────────────────────────────
   async function generateImage(prompt, index, signal, ethnicity) {
-    const model = getModel();
-    const imageSize = document.getElementById('imageSize').value;
-    const useRefs = document.getElementById('useStyleRefs').checked;
-
-    const submitBody = {
-      model,
-      prompt,
-      image_size: imageSize,
-    };
-
-    // Kontext: attach a style reference image
-    if (model === 'fal-ai/flux-pro/kontext' && useRefs && ethnicity) {
-      const refUrl = getRefForEthnicity(ethnicity);
-      if (refUrl) {
-        submitBody.image_url = refUrl;
-      }
-    }
-
-    if (model === 'fal-ai/flux/schnell') {
-      submitBody.num_inference_steps = 4;
-    } else if (model === 'fal-ai/flux/dev') {
-      submitBody.num_inference_steps = 28;
-      submitBody.guidance_scale = 3.5;
-    }
-
-    const res = await fetch('/api/fal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(submitBody),
-      signal,
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`API ${res.status}: ${err}`);
-    }
-
+    const model = getModel(), imageSize = document.getElementById('imageSize').value, useRefs = document.getElementById('useStyleRefs').checked;
+    const submitBody = { model, prompt, image_size: imageSize };
+    if (model === 'fal-ai/flux-pro/kontext' && useRefs && ethnicity) { const refUrl = getRefForEthnicity(ethnicity); if (refUrl) submitBody.image_url = refUrl; }
+    if (model === 'fal-ai/flux/schnell') submitBody.num_inference_steps = 4;
+    else if (model === 'fal-ai/flux/dev') { submitBody.num_inference_steps = 28; submitBody.guidance_scale = 3.5; }
+    const res = await fetch('/api/fal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitBody), signal });
+    if (!res.ok) { const err = await res.text(); throw new Error(`API ${res.status}: ${err}`); }
     const result = await res.json();
     return result.images[0].url;
   }
 
-  // ─── Generation Engine ─────────────────────────────
   async function startGeneration() {
     const template = document.getElementById('basePrompt').value;
     const batchSize = parseInt(document.getElementById('batchSize').value);
     const concurrency = parseInt(document.getElementById('concurrency').value);
-
-    // Test with a quick prompt build
-    if (!buildPrompt(template)) {
-      alert('Please select at least one option in each variation category');
-      return;
-    }
-
-    // Reset current batch state
-    state.running = true;
-    state.paused = false;
-    state.generated = [];
-    state.errors = [];
-    state.total = batchSize;
-    state.completed = 0;
-    state.failed = 0;
-    state.abortController = new AbortController();
-    logLines = [];
-
+    if (!buildPrompt(template)) { alert('Please select at least one option in each variation category'); return; }
+    state.running = true; state.paused = false; state.generated = []; state.errors = [];
+    state.total = batchSize; state.completed = 0; state.failed = 0; state.abortController = new AbortController(); logLines = [];
     document.getElementById('btnGenerate').disabled = true;
     document.getElementById('btnPause').disabled = false;
     document.getElementById('btnStop').disabled = false;
     document.getElementById('btnDownload').disabled = true;
-
-    // Wipe the main panel so it's obvious new images are incoming
-    const main = document.getElementById('mainContent');
-    main.innerHTML = '';
-    const emptyShell = document.createElement('div');
-    emptyShell.id = 'emptyState';
-    emptyShell.style.display = 'none';
-    main.appendChild(emptyShell);
-
-    setStatus('running', `generating 0/${batchSize}`);
-    renderMain();
+    const main = document.getElementById('mainContent'); main.innerHTML = '';
+    const emptyShell = document.createElement('div'); emptyShell.id = 'emptyState'; emptyShell.style.display = 'none'; main.appendChild(emptyShell);
+    setStatus('running', `generating 0/${batchSize}`); renderMain();
     log(`Starting batch of ${batchSize} avatars with model ${getModel()}`, 'info');
     log(`Concurrency: ${concurrency}`, 'info');
-
-    // Build all prompts upfront
     const prompts = [];
-    for (let i = 0; i < batchSize; i++) {
-      const built = buildPrompt(template);
-      prompts.push({ prompt: built.prompt, ethnicity: built.ethnicity, index: i });
-    }
-
-    // Process with concurrency limit
+    for (let i = 0; i < batchSize; i++) { const built = buildPrompt(template); prompts.push({ prompt: built.prompt, ethnicity: built.ethnicity, index: i }); }
     let cursor = 0;
-
     async function worker() {
       while (cursor < prompts.length && !state.abortController.signal.aborted) {
-        if (state.paused) {
-          await new Promise(r => setTimeout(r, 500));
-          continue;
-        }
-
+        if (state.paused) { await new Promise(r => setTimeout(r, 500)); continue; }
         const idx = cursor++;
         const { prompt, index, ethnicity } = prompts[idx];
-
         try {
           log(`[${index + 1}/${batchSize}] Generating...`);
           const url = await generateImage(prompt, index, state.abortController.signal, ethnicity);
-
-          state.completed++;
-          state.generated.push({ url, prompt, index });
+          state.completed++; state.generated.push({ url, prompt, index });
           log(`[${index + 1}/${batchSize}] Done`, 'success');
         } catch (err) {
           if (err.name === 'AbortError' || err.message === 'Aborted') return;
-          state.failed++;
-          state.errors.push({ index, error: err.message, prompt });
+          state.failed++; state.errors.push({ index, error: err.message, prompt });
           log(`[${index + 1}/${batchSize}] Error: ${err.message}`, 'error');
         }
-
-        setStatus('running', `generating ${state.completed}/${batchSize}`);
-        updateCostDisplay();
-        renderMain();
+        setStatus('running', `generating ${state.completed}/${batchSize}`); updateCostDisplay(); renderMain();
       }
     }
-
-    const workers = [];
-    for (let i = 0; i < concurrency; i++) {
-      workers.push(worker());
-    }
-
+    const workers = []; for (let i = 0; i < concurrency; i++) workers.push(worker());
     await Promise.all(workers);
-
     state.running = false;
     document.getElementById('btnGenerate').disabled = false;
     document.getElementById('btnPause').disabled = true;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnDownload').disabled = state.generated.length === 0;
-
-    if (state.abortController.signal.aborted) {
-      setStatus('error', 'stopped');
-      log('Generation stopped by user', 'error');
-    } else {
+    if (state.abortController.signal.aborted) { setStatus('error', 'stopped'); log('Generation stopped by user', 'error'); }
+    else {
       setStatus('active', `done — ${state.completed} avatars`);
       log(`Batch complete: ${state.completed} success, ${state.failed} failed`, 'success');
-
-      // Push completed batch into history (keep last 3)
-      if (state.generated.length > 0) {
-        state.batchHistory.unshift({
-          timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
-          images: [...state.generated],
-        });
-        if (state.batchHistory.length > 3) state.batchHistory.pop();
-      }
-
-      // Show a clear "new batch" banner in the grid area
+      if (state.generated.length > 0) { state.batchHistory.unshift({ timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }), images: [...state.generated] }); if (state.batchHistory.length > 3) state.batchHistory.pop(); }
       const progressTitle = document.getElementById('progressTitle');
-      if (progressTitle) {
-        progressTitle.innerHTML = `✦ Batch complete — ${state.completed} new avatars`;
-        progressTitle.style.color = 'var(--success)';
-      }
+      if (progressTitle) { progressTitle.innerHTML = `✦ Batch complete — ${state.completed} new avatars`; progressTitle.style.color = 'var(--success)'; }
     }
     renderMain();
   }
@@ -1422,52 +690,26 @@
     setStatus(state.paused ? 'active' : 'running', state.paused ? 'paused' : `generating ${state.completed}/${state.total}`);
     log(state.paused ? 'Paused' : 'Resumed', 'info');
   }
-
-  function stopGeneration() {
-    if (state.abortController) {
-      state.abortController.abort();
-    }
-  }
-
+  function stopGeneration() { if (state.abortController) state.abortController.abort(); }
   function updateCostDisplay() {
     const price = PRICE_MAP[getModel()] || 0.003;
-    const cost = state.completed * price;
-    document.getElementById('costEstimate').textContent = `$${cost.toFixed(2)}`;
+    document.getElementById('costEstimate').textContent = `$${(state.completed * price).toFixed(2)}`;
   }
 
-  // ─── Download All ──────────────────────────────────
   async function downloadAll() {
     if (state.generated.length === 0) return;
-
-    log('Preparing download...', 'info');
-    setStatus('running', 'downloading...');
-
-    // Download each image and trigger individual downloads
-    // (ZIP requires a library, so we'll do individual files or a simple approach)
+    log('Preparing download...', 'info'); setStatus('running', 'downloading...');
     for (let i = 0; i < state.generated.length; i++) {
       const item = state.generated[i];
       try {
-        const res = await fetch(item.url);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `nextgm_avatar_${String(item.index + 1).padStart(4, '0')}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-        // Small delay to avoid browser blocking
-        await new Promise(r => setTimeout(r, 200));
-      } catch (err) {
-        log(`Failed to download #${item.index + 1}: ${err.message}`, 'error');
-      }
+        const res = await fetch(item.url); const blob = await res.blob(); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = `nextgm_avatar_${String(item.index + 1).padStart(4, '0')}.png`; a.click();
+        URL.revokeObjectURL(url); await new Promise(r => setTimeout(r, 200));
+      } catch (err) { log(`Failed to download #${item.index + 1}: ${err.message}`, 'error'); }
     }
-
-    log('Download complete', 'success');
-    setStatus('active', 'done');
+    log('Download complete', 'success'); setStatus('active', 'done');
   }
-
-  // No API key needed — handled server-side via Cloudflare secret
 </script>
-
 </body>
 </html>
