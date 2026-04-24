@@ -1,0 +1,266 @@
+{
+  "black": {
+    "total": 10,
+    "breakdown": {
+      "hairstyle": {
+        "buzzcut": 0,
+        "shortcrop": 0,
+        "wavy": 0,
+        "dreadsshort": 0,
+        "dreadslong": 0,
+        "longhair": 0,
+        "parted": 0,
+        "cornrows": 0,
+        "afro": 0,
+        "bald": 0,
+        "manbun": 0,
+        "fade": 10,
+        "spiky": 0,
+        "blondecrop": 0
+      },
+      "facialHair": {
+        "clean": 0,
+        "stubble": 10,
+        "fullbeard": 0,
+        "goatee": 0,
+        "mustache": 0,
+        "saltpepper": 0
+      },
+      "bodyType": {
+        "lean": 0,
+        "athletic": 10,
+        "stocky": 0,
+        "heavyset": 0,
+        "beefy": 0,
+        "round": 0
+      },
+      "accessories": {
+        "none": 10,
+        "studs": 0,
+        "hoops": 0,
+        "diamonds": 0,
+        "singlehoop": 0
+      }
+    }
+  },
+  "white": {
+    "total": 0,
+    "breakdown": {
+      "hairstyle": {
+        "buzzcut": 0,
+        "shortcrop": 0,
+        "wavy": 0,
+        "dreadsshort": 0,
+        "dreadslong": 0,
+        "longhair": 0,
+        "parted": 0,
+        "cornrows": 0,
+        "afro": 0,
+        "bald": 0,
+        "manbun": 0,
+        "fade": 0,
+        "spiky": 0,
+        "blondecrop": 0
+      },
+      "facialHair": {
+        "clean": 0,
+        "stubble": 0,
+        "fullbeard": 0,
+        "goatee": 0,
+        "mustache": 0,
+        "saltpepper": 0
+      },
+      "bodyType": {
+        "lean": 0,
+        "athletic": 0,
+        "stocky": 0,
+        "heavyset": 0,
+        "beefy": 0,
+        "round": 0
+      },
+      "accessories": {
+        "none": 0,
+        "studs": 0,
+        "hoops": 0,
+        "diamonds": 0,
+        "singlehoop": 0
+      }
+    }
+  },
+  "hispanic": {
+    "total": 0,
+    "breakdown": {
+      "hairstyle": {
+        "buzzcut": 0,
+        "shortcrop": 0,
+        "wavy": 0,
+        "dreadsshort": 0,
+        "dreadslong": 0,
+        "longhair": 0,
+        "parted": 0,
+        "cornrows": 0,
+        "afro": 0,
+        "bald": 0,
+        "manbun": 0,
+        "fade": 0,
+        "spiky": 0,
+        "blondecrop": 0
+      },
+      "facialHair": {
+        "clean": 0,
+        "stubble": 0,
+        "fullbeard": 0,
+        "goatee": 0,
+        "mustache": 0,
+        "saltpepper": 0
+      },
+      "bodyType": {
+        "lean": 0,
+        "athletic": 0,
+        "stocky": 0,
+        "heavyset": 0,
+        "beefy": 0,
+        "round": 0
+      },
+      "accessories": {
+        "none": 0,
+        "studs": 0,
+        "hoops": 0,
+        "diamonds": 0,
+        "singlehoop": 0
+      }
+    }
+  },
+  "polynesian": {
+    "total": 0,
+    "breakdown": {
+      "hairstyle": {
+        "buzzcut": 0,
+        "shortcrop": 0,
+        "wavy": 0,
+        "dreadsshort": 0,
+        "dreadslong": 0,
+        "longhair": 0,
+        "parted": 0,
+        "cornrows": 0,
+        "afro": 0,
+        "bald": 0,
+        "manbun": 0,
+        "fade": 0,
+        "spiky": 0,
+        "blondecrop": 0
+      },
+      "facialHair": {
+        "clean": 0,
+        "stubble": 0,
+        "fullbeard": 0,
+        "goatee": 0,
+        "mustache": 0,
+        "saltpepper": 0
+      },
+      "bodyType": {
+        "lean": 0,
+        "athletic": 0,
+        "stocky": 0,
+        "heavyset": 0,
+        "beefy": 0,
+        "round": 0
+      },
+      "accessories": {
+        "none": 0,
+        "studs": 0,
+        "hoops": 0,
+        "diamonds": 0,
+        "singlehoop": 0
+      }
+    }
+  },
+  "asian": {
+    "total": 0,
+    "breakdown": {
+      "hairstyle": {
+        "buzzcut": 0,
+        "shortcrop": 0,
+        "wavy": 0,
+        "dreadsshort": 0,
+        "dreadslong": 0,
+        "longhair": 0,
+        "parted": 0,
+        "cornrows": 0,
+        "afro": 0,
+        "bald": 0,
+        "manbun": 0,
+        "fade": 0,
+        "spiky": 0,
+        "blondecrop": 0
+      },
+      "facialHair": {
+        "clean": 0,
+        "stubble": 0,
+        "fullbeard": 0,
+        "goatee": 0,
+        "mustache": 0,
+        "saltpepper": 0
+      },
+      "bodyType": {
+        "lean": 0,
+        "athletic": 0,
+        "stocky": 0,
+        "heavyset": 0,
+        "beefy": 0,
+        "round": 0
+      },
+      "accessories": {
+        "none": 0,
+        "studs": 0,
+        "hoops": 0,
+        "diamonds": 0,
+        "singlehoop": 0
+      }
+    }
+  },
+  "mixed": {
+    "total": 0,
+    "breakdown": {
+      "hairstyle": {
+        "buzzcut": 0,
+        "shortcrop": 0,
+        "wavy": 0,
+        "dreadsshort": 0,
+        "dreadslong": 0,
+        "longhair": 0,
+        "parted": 0,
+        "cornrows": 0,
+        "afro": 0,
+        "bald": 0,
+        "manbun": 0,
+        "fade": 0,
+        "spiky": 0,
+        "blondecrop": 0
+      },
+      "facialHair": {
+        "clean": 0,
+        "stubble": 0,
+        "fullbeard": 0,
+        "goatee": 0,
+        "mustache": 0,
+        "saltpepper": 0
+      },
+      "bodyType": {
+        "lean": 0,
+        "athletic": 0,
+        "stocky": 0,
+        "heavyset": 0,
+        "beefy": 0,
+        "round": 0
+      },
+      "accessories": {
+        "none": 0,
+        "studs": 0,
+        "hoops": 0,
+        "diamonds": 0,
+        "singlehoop": 0
+      }
+    }
+  }
+}

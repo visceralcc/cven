@@ -40,7 +40,7 @@
   .app {
     display: grid;
     grid-template-columns: 340px 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     min-height: 100vh;
   }
 
@@ -168,6 +168,50 @@
   .catalog-status .dot.off { background: var(--text-muted); }
   .catalog-tally { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 8px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
 
+  /* Tab bar */
+  .tab-bar { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border); grid-column: 1 / -1; }
+  .tab-btn { flex: 1; padding: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
+  .tab-btn:hover { color: var(--text-dim); background: var(--surface-2); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Catalog tab */
+  .catalog-view { padding: 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+  .catalog-view.hidden { display: none; }
+  .catalog-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .catalog-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; transition: border-color 0.15s; }
+  .catalog-summary-card .count { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+  .catalog-summary-card .count.zero { color: var(--danger); }
+  .catalog-summary-card .label { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; }
+  .catalog-grand-total { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); text-align: right; padding: 0 4px; }
+  .catalog-grand-total strong { color: var(--text); font-size: 16px; }
+
+  .ethnicity-detail { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .ethnicity-detail-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+  .ethnicity-detail-header:hover { background: var(--surface-2); }
+  .ethnicity-detail-header h3 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .ethnicity-detail-header .eth-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 3px 8px; border-radius: 5px; background: var(--surface-2); color: var(--text-dim); }
+  .ethnicity-detail-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
+  .ethnicity-detail-body.collapsed { display: none; }
+
+  .attr-section h4 { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .attr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+  .attr-cell { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); font-size: 12px; }
+  .attr-cell .attr-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+  .attr-cell .attr-count { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; min-width: 28px; text-align: right; }
+  .attr-cell .attr-count.zero { color: var(--danger); font-weight: 600; }
+  .attr-cell .attr-count.low { color: var(--warning); }
+  .attr-cell .attr-count.good { color: var(--success); }
+  .attr-cell.gap-cell { border-color: rgba(200,48,48,0.25); background: rgba(200,48,48,0.04); }
+  .attr-cell.low-cell { border-color: rgba(184,138,32,0.25); background: rgba(184,138,32,0.04); }
+
+  .catalog-loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 13px; gap: 10px; }
+  .catalog-offline { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; text-align: center; gap: 12px; }
+  .catalog-offline .icon { width: 56px; height: 56px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 8px; }
+  .catalog-offline h2 { font-size: 18px; font-weight: 600; }
+  .catalog-offline p { font-size: 13px; color: var(--text-dim); max-width: 360px; line-height: 1.6; }
+  .chevron { display: inline-block; transition: transform 0.2s; font-size: 14px; color: var(--text-muted); }
+  .chevron.open { transform: rotate(90deg); }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -201,7 +245,12 @@
     </div>
   </div>
 
-  <div class="sidebar">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="production" onclick="switchTab('production')">Production</button>
+    <button class="tab-btn" data-tab="catalog" onclick="switchTab('catalog')">Catalog</button>
+  </div>
+
+  <div class="sidebar" id="sidebarProduction">
     <div>
       <div class="section-label">Model</div>
       <div class="model-options">
@@ -380,6 +429,10 @@
         2,700 avatars ≈ $8–$12
       </p>
     </div>
+  </div>
+
+  <div class="catalog-view hidden" id="catalogView" style="grid-column: 1 / -1;">
+    <div class="catalog-loading" id="catalogLoading">Loading catalog data…</div>
   </div>
 </div>
 
@@ -911,7 +964,157 @@
   function stopGeneration() { if (state.abortController) state.abortController.abort(); }
   function updateCostDisplay() {
     const price = PRICE_MAP[getModel()] || 0.003;
-    document.getElementById('costEstimate').textContent = `$${(state.completed * price).toFixed(2)}`;
+    document.getElementById('costEstimate').textContent = `${(state.completed * price).toFixed(2)}`;
+  }
+
+  // ── Tab switching ─────────────────────────────────────────
+
+  let currentTab = 'production';
+  let catalogData = null;
+  let expandedEthnicities = new Set();
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    const sidebar = document.getElementById('sidebarProduction');
+    const main = document.getElementById('mainContent');
+    const catalog = document.getElementById('catalogView');
+    if (tab === 'production') {
+      sidebar.style.display = '';
+      main.style.display = '';
+      catalog.classList.add('hidden');
+    } else {
+      sidebar.style.display = 'none';
+      main.style.display = 'none';
+      catalog.classList.remove('hidden');
+      loadCatalog();
+    }
+  }
+
+  const ATTR_LABELS = {
+    hairstyle: 'Hairstyles',
+    facialHair: 'Facial Hair',
+    bodyType: 'Body Type',
+    accessories: 'Accessories',
+  };
+
+  const ETH_DISPLAY = {
+    black: 'Black', white: 'White', hispanic: 'Hispanic',
+    polynesian: 'Polynesian', asian: 'Asian', mixed: 'Mixed',
+  };
+
+  async function loadCatalog() {
+    const view = document.getElementById('catalogView');
+    view.innerHTML = '<div class="catalog-loading">Loading catalog data…</div>';
+    let data = null;
+    // Try local server first (works on localhost with live data)
+    if (state.catalogConnected) {
+      try {
+        const res = await fetch(CATALOG_SERVER + '/catalog', { signal: AbortSignal.timeout(3000) });
+        data = await res.json();
+      } catch {}
+    }
+    // Fall back to static manifest (works on cven.cc)
+    if (!data) {
+      try {
+        const res = await fetch('/nextgm/catalog-manifest.json', { signal: AbortSignal.timeout(5000) });
+        if (res.ok) data = await res.json();
+      } catch {}
+    }
+    if (!data) {
+      view.innerHTML = `<div class="catalog-offline">
+        <div class="icon">📁</div>
+        <h2>Catalog Unavailable</h2>
+        <p>No catalog data found. Run the manifest build or start the avatar server.</p>
+      </div>`;
+      return;
+    }
+    catalogData = data;
+    renderCatalog();
+  }
+
+  function getCountClass(count, ethTotal) {
+    if (count === 0) return 'zero';
+    // "low" = less than 5% of the ethnicity total (or under 5 absolute)
+    if (count < 5 || (ethTotal > 20 && count < ethTotal * 0.05)) return 'low';
+    return 'good';
+  }
+
+  function getCellClass(count, ethTotal) {
+    if (count === 0) return 'gap-cell';
+    if (count < 5 || (ethTotal > 20 && count < ethTotal * 0.05)) return 'low-cell';
+    return '';
+  }
+
+  function renderCatalog() {
+    if (!catalogData) return;
+    const view = document.getElementById('catalogView');
+    const ethnicities = Object.keys(catalogData);
+    let grandTotal = 0;
+    ethnicities.forEach(e => grandTotal += catalogData[e].total);
+
+    let html = '';
+
+    // Summary cards
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;"><div class="section-label" style="margin:0">Coverage Overview</div>';
+    html += `<div class="catalog-grand-total">Total: <strong>${grandTotal.toLocaleString()}</strong> avatars</div></div>`;
+    html += '<div class="catalog-summary">';
+    for (const eth of ethnicities) {
+      const d = catalogData[eth];
+      html += `<div class="catalog-summary-card">
+        <div class="count ${d.total === 0 ? 'zero' : ''}">${d.total}</div>
+        <div class="label">${ETH_DISPLAY[eth] || eth}</div>
+      </div>`;
+    }
+    html += '</div>';
+
+    // Detail sections per ethnicity
+    for (const eth of ethnicities) {
+      const d = catalogData[eth];
+      const isOpen = expandedEthnicities.has(eth);
+      html += `<div class="ethnicity-detail">`;
+      html += `<div class="ethnicity-detail-header" onclick="toggleEthnicity('${eth}')">`;
+      html += `<h3><span class="chevron ${isOpen ? 'open' : ''}">▶</span> ${ETH_DISPLAY[eth] || eth} <span class="eth-count">${d.total} avatar${d.total !== 1 ? 's' : ''}</span></h3>`;
+      // Show gap count
+      let gapCount = 0;
+      for (const cat of Object.keys(d.breakdown)) {
+        for (const val of Object.keys(d.breakdown[cat])) {
+          if (d.breakdown[cat][val] === 0) gapCount++;
+        }
+      }
+      if (gapCount > 0) html += `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--danger);">${gapCount} gap${gapCount !== 1 ? 's' : ''}</span>`;
+      html += '</div>';
+      html += `<div class="ethnicity-detail-body ${isOpen ? '' : 'collapsed'}">`;
+
+      for (const [cat, values] of Object.entries(d.breakdown)) {
+        html += `<div class="attr-section"><h4>${ATTR_LABELS[cat] || cat}</h4><div class="attr-grid">`;
+        // Sort: gaps first, then low, then by count ascending
+        const sorted = Object.entries(values).sort((a, b) => {
+          if (a[1] === 0 && b[1] !== 0) return -1;
+          if (b[1] === 0 && a[1] !== 0) return 1;
+          return a[1] - b[1];
+        });
+        for (const [val, count] of sorted) {
+          const cellCls = getCellClass(count, d.total);
+          const countCls = getCountClass(count, d.total);
+          html += `<div class="attr-cell ${cellCls}"><span class="attr-name">${val}</span><span class="attr-count ${countCls}">${count}</span></div>`;
+        }
+        html += '</div></div>';
+      }
+
+      html += '</div></div>';
+    }
+
+    // Refresh button
+    html += `<div style="text-align:center;padding:8px 0;"><button class="btn btn-secondary btn-sm" onclick="loadCatalog()">Refresh Catalog</button></div>`;
+
+    view.innerHTML = html;
+  }
+
+  function toggleEthnicity(eth) {
+    if (expandedEthnicities.has(eth)) expandedEthnicities.delete(eth);
+    else expandedEthnicities.add(eth);
+    renderCatalog();
   }
 </script>
 </body>

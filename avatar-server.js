@@ -29,6 +29,17 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon', '.webp': 'image/webp', '.woff2': 'font/woff2',
 };
 
+/** Rebuild public/nextgm/catalog-manifest.json so the deployed cven.cc version stays in sync. */
+function rebuildManifest() {
+  try {
+    const manifest = getCatalogBreakdown();
+    fs.writeFileSync(path.join(PUBLIC_ROOT, 'nextgm', 'catalog-manifest.json'), JSON.stringify(manifest, null, 2));
+    console.log('  ↻ manifest updated');
+  } catch (e) {
+    console.log('  ⚠ manifest rebuild failed: ' + e.message);
+  }
+}
+
 function ensureCatalogFolders() {
   if (!fs.existsSync(CATALOG_ROOT)) fs.mkdirSync(CATALOG_ROOT, { recursive: true });
   for (const f of ETHNICITY_FOLDERS) {
@@ -191,6 +202,7 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       if (!body.url || !body.tags) { sendJSON(res, 400, { error: 'Missing url or tags' }); return; }
       const r = await saveImage(body.url, body.tags);
+      if (r.saved) rebuildManifest();
       sendJSON(res, 200, r.saved ? { saved: 1, failed: 0, path: r.path } : { saved: 0, failed: 1, errors: [r.error] });
     } catch (e) { sendJSON(res, 400, { error: e.message }); }
     return;
@@ -208,6 +220,7 @@ const server = http.createServer(async (req, res) => {
         if (r.saved) { saved++; paths.push(r.path); } else { failed++; errors.push(r.error); }
       }
       console.log('Batch complete: ' + saved + ' saved, ' + failed + ' failed');
+      if (saved > 0) rebuildManifest();
       sendJSON(res, 200, { saved, failed, errors, paths });
     } catch (e) { sendJSON(res, 400, { error: e.message }); }
     return;
@@ -223,6 +236,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 ensureCatalogFolders();
+rebuildManifest();
 server.listen(PORT, () => {
   const stats = getStats();
   console.log('\n\uD83C\uDFC8 Avatar Forge Catalog Server');
