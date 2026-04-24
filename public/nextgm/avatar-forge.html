@@ -123,6 +123,7 @@
   .image-cell:hover { border-color: var(--border-hover); transform: scale(1.02); }
   .image-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .image-cell .cell-index { position: absolute; bottom: 4px; left: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; background: rgba(0,0,0,0.55); color: #fff; padding: 2px 5px; border-radius: 3px; }
+  .image-cell .cell-saved { position: absolute; top: 4px; right: 4px; font-size: 10px; background: rgba(42,138,74,0.85); color: #fff; padding: 2px 5px; border-radius: 3px; }
   .image-cell.generating { display: flex; align-items: center; justify-content: center; }
   .image-cell.generating::after { content: ''; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   .image-cell.error { border-color: rgba(245, 74, 74, 0.3); }
@@ -161,6 +162,12 @@
   .ref-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .ref-thumb .ref-label { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'JetBrains Mono', monospace; font-size: 7px; text-align: center; background: rgba(0,0,0,0.55); color: #fff; padding: 2px 0; letter-spacing: 0.5px; text-transform: uppercase; }
 
+  .catalog-status { display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 5px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); }
+  .catalog-status .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .catalog-status .dot.on { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .catalog-status .dot.off { background: var(--text-muted); }
+  .catalog-tally { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 8px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -181,6 +188,11 @@
     </div>
     <div class="header-right">
       <div class="cost-badge">est. cost: <strong id="costEstimate">$0.00</strong></div>
+      <span class="catalog-tally" id="catalogTally" style="display:none"></span>
+      <div class="catalog-status" id="catalogStatus">
+        <div class="dot off" id="catalogDot"></div>
+        <span id="catalogLabel">catalog offline</span>
+      </div>
       <a href="/nextgm/avatar-forge-guide" style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent-dim)';this.style.color='var(--accent-dim)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Guide</a>
       <div class="header-status">
         <div class="status-dot" id="statusDot"></div>
@@ -247,6 +259,15 @@
           <option value="square">512×512 (Square)</option>
           <option value="portrait_4_3">Portrait 3:4</option>
         </select>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Auto-save to catalog</span>
+          <label style="font-size:11px;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-muted);">
+            <input type="checkbox" id="autoSave" checked style="accent-color:var(--accent);" /> Enable
+          </label>
+        </label>
+        <div class="hint" id="autoSaveHint">Images save to local catalog as they generate</div>
       </div>
     </div>
 
@@ -346,7 +367,7 @@
       <button class="btn btn-secondary btn-sm" style="flex:1" onclick="pauseGeneration()" id="btnPause" disabled>Pause</button>
       <button class="btn btn-danger btn-sm" style="flex:1" onclick="stopGeneration()" id="btnStop" disabled>Stop</button>
     </div>
-    <button class="btn btn-secondary btn-sm" onclick="downloadAll()" id="btnDownload" disabled>Download All as ZIP</button>
+    <button class="btn btn-secondary btn-sm" onclick="saveAllToCatalog()" id="btnSaveAll" style="display:none">Save All to Catalog</button>
   </div>
 
   <div class="main" id="mainContent">
@@ -376,43 +397,68 @@
 <script>
   let state = {
     running: false, paused: false, generated: [], errors: [], total: 0, completed: 0, failed: 0,
-    abortController: null, currentModalUrl: null, batchHistory: [],
+    abortController: null, currentModalUrl: null, currentModalTags: null, batchHistory: [],
+    catalogConnected: false, savedCount: 0,
   };
+
+  // When running from localhost (avatar-server), API is same-origin.
+  // When running from cven.cc, talk to localhost:3456.
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const CATALOG_SERVER = isLocal ? '' : 'http://localhost:3456';
+  const FAL_API_BASE = isLocal ? 'https://cven.cc' : '';
 
   const PRICE_MAP = {
     'fal-ai/flux/schnell': 0.003, 'fal-ai/flux/dev': 0.025,
     'fal-ai/flux-2/pro': 0.03, 'fal-ai/flux-pro/kontext': 0.04,
   };
 
+  // Keep in sync with avatar-server.js
+  const TAG_SLUGS = {
+    ethnicity: {
+      'Black': 'black', 'White': 'white', 'Hispanic Latino': 'hispanic',
+      'Polynesian Samoan': 'polynesian', 'Asian': 'asian', 'mixed-race biracial': 'mixed',
+    },
+    hairstyle: {
+      'buzz cut hair': 'buzzcut', 'short cropped hair': 'shortcrop', 'medium-length wavy hair': 'wavy',
+      'short dreadlocks': 'dreadsshort', 'long dreadlocks': 'dreadslong',
+      'long straight hair past shoulders': 'longhair', 'side-parted hair': 'parted',
+      'cornrow braids': 'cornrows', 'large afro hairstyle': 'afro',
+      'completely bald shaved head': 'bald', 'man bun with undercut': 'manbun',
+      'fade haircut': 'fade', 'short spiky hair': 'spiky', 'blonde crop hair': 'blondecrop',
+    },
+    facialHair: {
+      'clean-shaven no facial hair': 'clean', 'light stubble beard': 'stubble',
+      'thick full beard': 'fullbeard', 'trimmed goatee': 'goatee',
+      'thin mustache': 'mustache', 'salt-and-pepper gray-flecked goatee': 'saltpepper',
+    },
+    bodyType: {
+      'lean wiry frame': 'lean', 'athletic build': 'athletic', 'stocky muscular build': 'stocky',
+      'large heavy-set frame': 'heavyset', 'massive beefy frame': 'beefy', 'round heavyset body': 'round',
+    },
+    accessories: {
+      'no earrings or accessories': 'none', 'small black stud earrings': 'studs',
+      'small gold hoop earrings': 'hoops', 'diamond stud earrings': 'diamonds',
+      'one small hoop earring': 'singlehoop',
+    },
+  };
+
   const STYLE_REFS = {
     'Black': [
-      '/nextgm/refs/black/01_black_buzzcut.png',
-      '/nextgm/refs/black/02_black_manbun.png',
-      '/nextgm/refs/black/03_black_cornrows.png',
-      '/nextgm/refs/black/04_black_long.png',
-      '/nextgm/refs/black/05_black_beard.png',
-      '/nextgm/refs/black/06_black_short.png',
-      '/nextgm/refs/black/07_black_afro.png',
-      '/nextgm/refs/black/08_black_cornrows.png',
-      '/nextgm/refs/black/09_black_bald.png',
-      '/nextgm/refs/black/10_black_short.png',
-      '/nextgm/refs/black/11_black_shortdreds.png',
-      '/nextgm/refs/black/12_black_short.png',
+      '/nextgm/refs/black/01_black_buzzcut.png', '/nextgm/refs/black/02_black_manbun.png',
+      '/nextgm/refs/black/03_black_cornrows.png', '/nextgm/refs/black/04_black_long.png',
+      '/nextgm/refs/black/05_black_beard.png', '/nextgm/refs/black/06_black_short.png',
+      '/nextgm/refs/black/07_black_afro.png', '/nextgm/refs/black/08_black_cornrows.png',
+      '/nextgm/refs/black/09_black_bald.png', '/nextgm/refs/black/10_black_short.png',
+      '/nextgm/refs/black/11_black_shortdreds.png', '/nextgm/refs/black/12_black_short.png',
       '/nextgm/refs/black/13_black_shortfro.png',
     ],
     'White': [
-      '/nextgm/refs/white/01_white_wavy.png',
-      '/nextgm/refs/white/02_white_wavy.png',
-      '/nextgm/refs/white/03_white_long.png',
-      '/nextgm/refs/white/04_white_short.png',
-      '/nextgm/refs/white/05_white_short.png',
-      '/nextgm/refs/white/06_white_wavy.png',
-      '/nextgm/refs/white/07_white_wavy.png',
-      '/nextgm/refs/white/08_white_wavy.png',
-      '/nextgm/refs/white/09_white_bald.png',
-      '/nextgm/refs/white/10_white_curly.png',
-      '/nextgm/refs/white/11_white_wavy.png',
-      '/nextgm/refs/white/12_white_wavy.png',
+      '/nextgm/refs/white/01_white_wavy.png', '/nextgm/refs/white/02_white_wavy.png',
+      '/nextgm/refs/white/03_white_long.png', '/nextgm/refs/white/04_white_short.png',
+      '/nextgm/refs/white/05_white_short.png', '/nextgm/refs/white/06_white_wavy.png',
+      '/nextgm/refs/white/07_white_wavy.png', '/nextgm/refs/white/08_white_wavy.png',
+      '/nextgm/refs/white/09_white_bald.png', '/nextgm/refs/white/10_white_curly.png',
+      '/nextgm/refs/white/11_white_wavy.png', '/nextgm/refs/white/12_white_wavy.png',
       '/nextgm/refs/white/13_white_wavy.png',
     ],
     'Hispanic Latino': ['/nextgm/refs/hispanic/04_hispanic_manbun.png'],
@@ -425,6 +471,103 @@
     'Black': 'Black', 'White': 'White', 'Hispanic Latino': 'Hispanic',
     'Polynesian Samoan': 'Polynesian', 'Asian': 'Asian', 'mixed-race biracial': 'Mixed',
   };
+
+  // ── Catalog server connection ────────────────────────
+
+  async function checkCatalogServer() {
+    try {
+      const res = await fetch(CATALOG_SERVER + '/health', { signal: AbortSignal.timeout(2000) });
+      const data = await res.json();
+      state.catalogConnected = data.status === 'ok';
+    } catch { state.catalogConnected = false; }
+    updateCatalogUI();
+  }
+
+  async function fetchCatalogStats() {
+    if (!state.catalogConnected) return;
+    try {
+      const res = await fetch(CATALOG_SERVER + '/stats', { signal: AbortSignal.timeout(2000) });
+      const stats = await res.json();
+      updateTallyUI(stats);
+    } catch {}
+  }
+
+  function updateCatalogUI() {
+    const dot = document.getElementById('catalogDot');
+    const label = document.getElementById('catalogLabel');
+    const autoSave = document.getElementById('autoSave');
+    const hint = document.getElementById('autoSaveHint');
+    if (state.catalogConnected) {
+      dot.className = 'dot on';
+      label.textContent = 'catalog connected';
+      autoSave.disabled = false;
+      hint.textContent = 'Images save to local catalog as they generate';
+    } else {
+      dot.className = 'dot off';
+      label.textContent = 'catalog offline';
+      autoSave.disabled = true;
+      autoSave.checked = false;
+      hint.textContent = 'Start avatar-server to enable';
+    }
+  }
+
+  function updateTallyUI(stats) {
+    const el = document.getElementById('catalogTally');
+    if (!stats || stats.total === 0) { el.style.display = 'none'; return; }
+    const parts = [
+      'B:' + stats.black, 'W:' + stats.white, 'H:' + stats.hispanic,
+      'P:' + stats.polynesian, 'A:' + stats.asian, 'M:' + stats.mixed,
+    ];
+    el.textContent = parts.join(' \u00b7 ') + ' = ' + stats.total.toLocaleString();
+    el.style.display = '';
+  }
+
+  async function saveImageToCatalog(url, tags) {
+    if (!state.catalogConnected) return null;
+    try {
+      const res = await fetch(CATALOG_SERVER + '/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, tags }),
+      });
+      return await res.json();
+    } catch (err) {
+      return { saved: 0, failed: 1, errors: [err.message] };
+    }
+  }
+
+  async function saveAllToCatalog() {
+    const unsaved = state.generated.filter(g => !g.saved);
+    if (unsaved.length === 0) return;
+    const btn = document.getElementById('btnSaveAll');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    log('Saving ' + unsaved.length + ' images to catalog...', 'info');
+    let saved = 0, failed = 0;
+    for (const item of unsaved) {
+      const result = await saveImageToCatalog(item.url, item.tags);
+      if (result && result.saved) {
+        saved++; item.saved = true; item.savedPath = result.path;
+        log('\u2713 Saved \u2192 ' + result.path, 'success');
+      } else {
+        failed++;
+        const err = result && result.errors ? result.errors[0] : 'Unknown error';
+        log('\u2717 Save failed: ' + err, 'error');
+      }
+    }
+    log('Save complete: ' + saved + ' saved, ' + failed + ' failed', saved > 0 ? 'success' : 'error');
+    btn.textContent = 'Save All to Catalog';
+    btn.disabled = false;
+    if (state.generated.every(g => g.saved)) btn.style.display = 'none';
+    fetchCatalogStats();
+    renderMain();
+  }
+
+  // Check connection on load and periodically
+  checkCatalogServer();
+  fetchCatalogStats();
+  setInterval(() => { checkCatalogServer(); fetchCatalogStats(); }, 10000);
+
+  // ── Style board ──────────────────────────────────────
 
   function renderStyleBoard() {
     const board = document.getElementById('styleBoard');
@@ -467,12 +610,17 @@
   function getRefForEthnicity(ethnicity) {
     const refs = STYLE_REFS[ethnicity];
     if (!refs || refs.length === 0) return null;
-    return window.location.origin + refs[Math.floor(Math.random() * refs.length)];
+    // Always use cven.cc for refs — fal.ai needs a publicly accessible URL
+    return 'https://cven.cc' + refs[Math.floor(Math.random() * refs.length)];
   }
+
+  // ── Helpers ──────────────────────────────────────────
 
   function getActiveTags(id) { return [...document.querySelectorAll(`#${id} .tag.active`)].map(t => t.dataset.val); }
   function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function getModel() { return document.querySelector('input[name="model"]:checked').value; }
+  function isAutoSaveOn() { return document.getElementById('autoSave').checked && state.catalogConnected; }
+
   function updateCostEstimate() {
     const batch = parseInt(document.getElementById('batchSize').value) || 0;
     const price = PRICE_MAP[getModel()] || 0.003;
@@ -498,6 +646,8 @@
   document.getElementById('batchSize').addEventListener('input', updateCostEstimate);
   updateCostEstimate();
 
+  // ── Prompt building ──────────────────────────────────
+
   const AGES = ['21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38'];
   const BUILDS = ['lean athletic neck','muscular neck and broad shoulders','very thick muscular neck and broad shoulders','thick muscular neck','lean neck'];
   const EXPRESSIONS = ['confident slight smile','serious focused expression','calm confident expression','intense focused expression','relaxed friendly slight smirk','determined expression','youthful eager smile','wise veteran stoic expression','weathered veteran confident expression'];
@@ -518,15 +668,33 @@
     const bodyTypes = getActiveTags('tagBodyType');
     if (!ethnicities.length || !hairstyles.length || !facialHairs.length || !accessories.length || !bodyTypes.length) return null;
     const ethnicity = pickRandom(ethnicities);
+    const hairstyle = pickRandom(hairstyles);
+    const facialHair = pickRandom(facialHairs);
+    const bodyType = pickRandom(bodyTypes);
+    const accessory = pickRandom(accessories);
     const skinTones = SKIN_TONES_MAP[ethnicity] || ['natural skin tones'];
     const prompt = template
       .replace('{ethnicity}', ethnicity).replace('{age}', pickRandom(AGES))
-      .replace('{hairstyle}', pickRandom(hairstyles)).replace('{facial_hair}', pickRandom(facialHairs))
-      .replace('{accessories}', pickRandom(accessories)).replace('{body_type}', pickRandom(bodyTypes))
+      .replace('{hairstyle}', hairstyle).replace('{facial_hair}', facialHair)
+      .replace('{accessories}', accessory).replace('{body_type}', bodyType)
       .replace('{build}', pickRandom(BUILDS)).replace('{expression}', pickRandom(EXPRESSIONS))
       .replace('{skin_tone}', pickRandom(skinTones));
-    return { prompt, ethnicity };
+    const tags = {
+      ethnicity: TAG_SLUGS.ethnicity[ethnicity] || 'unknown',
+      hairstyle: TAG_SLUGS.hairstyle[hairstyle] || 'unknown',
+      facialHair: TAG_SLUGS.facialHair[facialHair] || 'unknown',
+      bodyType: TAG_SLUGS.bodyType[bodyType] || 'unknown',
+      accessories: TAG_SLUGS.accessories[accessory] || 'unknown',
+    };
+    return { prompt, ethnicity, tags };
   }
+
+  /** Build smart filename from tags (for modal single-download fallback). */
+  function buildSmartFilename(tags) {
+    return [tags.ethnicity, tags.hairstyle, tags.facialHair, tags.bodyType, tags.accessories].join('_') + '.png';
+  }
+
+  // ── Logging ──────────────────────────────────────────
 
   let logLines = [];
   function log(msg, type = '') {
@@ -545,6 +713,8 @@
     document.getElementById('statusDot').className = 'status-dot ' + status;
     document.getElementById('statusText').textContent = text;
   }
+
+  // ── Render ───────────────────────────────────────────
 
   function renderMain() {
     const main = document.getElementById('mainContent');
@@ -592,30 +762,54 @@
     const existingCells = grid.children.length;
     for (let i = existingCells; i < state.generated.length; i++) {
       const item = state.generated[i];
-      const capturedUrl = item.url, capturedPrompt = item.prompt, capturedNum = item.index + 1;
+      const capturedUrl = item.url, capturedPrompt = item.prompt, capturedNum = item.index + 1, capturedTags = item.tags;
       const cell = document.createElement('div');
       cell.className = 'image-cell';
-      cell.onclick = () => openModal(capturedUrl, capturedPrompt, capturedNum);
-      cell.innerHTML = `<img src="${item.url}" loading="lazy" /><div class="cell-index">#${capturedNum}</div>`;
+      cell.id = 'cell-' + item.index;
+      cell.onclick = () => openModal(capturedUrl, capturedPrompt, capturedNum, capturedTags);
+      let savedBadge = item.saved ? '<div class="cell-saved">\u2713</div>' : '';
+      cell.innerHTML = `<img src="${item.url}" loading="lazy" /><div class="cell-index">#${capturedNum}</div>${savedBadge}`;
       grid.appendChild(cell);
+    }
+    // Update saved badges for cells that were saved after initial render
+    for (const item of state.generated) {
+      if (item.saved) {
+        const cell = document.getElementById('cell-' + item.index);
+        if (cell && !cell.querySelector('.cell-saved')) {
+          const badge = document.createElement('div');
+          badge.className = 'cell-saved';
+          badge.textContent = '\u2713';
+          cell.appendChild(badge);
+        }
+      }
     }
   }
 
   function toggleLog() { const lc = document.getElementById('logContent'); lc.style.display = lc.style.display === 'none' ? '' : 'none'; }
 
-  function openModal(url, prompt, displayNum) {
+  // ── Modal ────────────────────────────────────────────
+
+  function openModal(url, prompt, displayNum, tags) {
     if (!url) return;
     const img = document.getElementById('modalImg'); img.src = ''; img.src = url;
     document.getElementById('modalPrompt').textContent = prompt;
-    state.currentModalUrl = url; state.currentModalDisplayNum = displayNum;
+    state.currentModalUrl = url; state.currentModalDisplayNum = displayNum; state.currentModalTags = tags;
     document.getElementById('modalOverlay').classList.add('active');
   }
   function closeModal(e) { if (e && e.target !== e.currentTarget) return; document.getElementById('modalOverlay').classList.remove('active'); }
   function downloadSingle() {
     if (!state.currentModalUrl) return;
     const a = document.createElement('a'); a.href = state.currentModalUrl;
-    a.download = `nextgm_avatar_${String(state.currentModalDisplayNum).padStart(4, '0')}.png`; a.click();
+    // Use smart filename if tags available, otherwise fallback
+    if (state.currentModalTags) {
+      a.download = buildSmartFilename(state.currentModalTags);
+    } else {
+      a.download = `nextgm_avatar_${String(state.currentModalDisplayNum).padStart(4, '0')}.png`;
+    }
+    a.click();
   }
+
+  // ── Generation ───────────────────────────────────────
 
   async function generateImage(prompt, index, signal, ethnicity) {
     const model = getModel(), imageSize = document.getElementById('imageSize').value, useRefs = document.getElementById('useStyleRefs').checked;
@@ -623,7 +817,7 @@
     if (model === 'fal-ai/flux-pro/kontext' && useRefs && ethnicity) { const refUrl = getRefForEthnicity(ethnicity); if (refUrl) submitBody.image_url = refUrl; }
     if (model === 'fal-ai/flux/schnell') submitBody.num_inference_steps = 4;
     else if (model === 'fal-ai/flux/dev') { submitBody.num_inference_steps = 28; submitBody.guidance_scale = 3.5; }
-    const res = await fetch('/api/fal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitBody), signal });
+    const res = await fetch(FAL_API_BASE + '/api/fal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitBody), signal });
     if (!res.ok) { const err = await res.text(); throw new Error(`API ${res.status}: ${err}`); }
     const result = await res.json();
     return result.images[0].url;
@@ -633,31 +827,49 @@
     const template = document.getElementById('basePrompt').value;
     const batchSize = parseInt(document.getElementById('batchSize').value);
     const concurrency = parseInt(document.getElementById('concurrency').value);
+    const autoSave = isAutoSaveOn();
     if (!buildPrompt(template)) { alert('Please select at least one option in each variation category'); return; }
     state.running = true; state.paused = false; state.generated = []; state.errors = [];
-    state.total = batchSize; state.completed = 0; state.failed = 0; state.abortController = new AbortController(); logLines = [];
+    state.total = batchSize; state.completed = 0; state.failed = 0; state.savedCount = 0;
+    state.abortController = new AbortController(); logLines = [];
     document.getElementById('btnGenerate').disabled = true;
     document.getElementById('btnPause').disabled = false;
     document.getElementById('btnStop').disabled = false;
-    document.getElementById('btnDownload').disabled = true;
+    document.getElementById('btnSaveAll').style.display = 'none';
     const main = document.getElementById('mainContent'); main.innerHTML = '';
     const emptyShell = document.createElement('div'); emptyShell.id = 'emptyState'; emptyShell.style.display = 'none'; main.appendChild(emptyShell);
     setStatus('running', `generating 0/${batchSize}`); renderMain();
     log(`Starting batch of ${batchSize} avatars with model ${getModel()}`, 'info');
     log(`Concurrency: ${concurrency}`, 'info');
+    if (autoSave) log('Auto-save: ON \u2192 images will save to catalog as they generate', 'info');
+    else log('Auto-save: OFF', 'info');
     const prompts = [];
-    for (let i = 0; i < batchSize; i++) { const built = buildPrompt(template); prompts.push({ prompt: built.prompt, ethnicity: built.ethnicity, index: i }); }
+    for (let i = 0; i < batchSize; i++) { const built = buildPrompt(template); prompts.push({ prompt: built.prompt, ethnicity: built.ethnicity, tags: built.tags, index: i }); }
     let cursor = 0;
     async function worker() {
       while (cursor < prompts.length && !state.abortController.signal.aborted) {
         if (state.paused) { await new Promise(r => setTimeout(r, 500)); continue; }
         const idx = cursor++;
-        const { prompt, index, ethnicity } = prompts[idx];
+        const { prompt, index, ethnicity, tags } = prompts[idx];
         try {
           log(`[${index + 1}/${batchSize}] Generating...`);
           const url = await generateImage(prompt, index, state.abortController.signal, ethnicity);
-          state.completed++; state.generated.push({ url, prompt, index });
+          const item = { url, prompt, index, tags, saved: false, savedPath: null };
+          state.completed++;
+          state.generated.push(item);
           log(`[${index + 1}/${batchSize}] Done`, 'success');
+          // Auto-save if enabled
+          if (autoSave) {
+            const result = await saveImageToCatalog(url, tags);
+            if (result && result.saved) {
+              item.saved = true; item.savedPath = result.path;
+              state.savedCount++;
+              log('\u2713 Saved \u2192 ' + result.path, 'success');
+            } else {
+              const err = result && result.errors ? result.errors[0] : 'Unknown error';
+              log('\u2717 Save failed: ' + err, 'error');
+            }
+          }
         } catch (err) {
           if (err.name === 'AbortError' || err.message === 'Aborted') return;
           state.failed++; state.errors.push({ index, error: err.message, prompt });
@@ -672,15 +884,21 @@
     document.getElementById('btnGenerate').disabled = false;
     document.getElementById('btnPause').disabled = true;
     document.getElementById('btnStop').disabled = true;
-    document.getElementById('btnDownload').disabled = state.generated.length === 0;
+    // Show Save All button if auto-save was off and there are unsaved images
+    const unsaved = state.generated.filter(g => !g.saved);
+    if (unsaved.length > 0 && state.catalogConnected) {
+      document.getElementById('btnSaveAll').style.display = '';
+    }
     if (state.abortController.signal.aborted) { setStatus('error', 'stopped'); log('Generation stopped by user', 'error'); }
     else {
-      setStatus('active', `done — ${state.completed} avatars`);
-      log(`Batch complete: ${state.completed} success, ${state.failed} failed`, 'success');
+      const savedMsg = autoSave ? ` \u00b7 ${state.savedCount} saved` : '';
+      setStatus('active', `done \u2014 ${state.completed} avatars${savedMsg}`);
+      log(`Batch complete: ${state.completed} success, ${state.failed} failed${savedMsg}`, 'success');
       if (state.generated.length > 0) { state.batchHistory.unshift({ timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }), images: [...state.generated] }); if (state.batchHistory.length > 3) state.batchHistory.pop(); }
       const progressTitle = document.getElementById('progressTitle');
-      if (progressTitle) { progressTitle.innerHTML = `✦ Batch complete — ${state.completed} new avatars`; progressTitle.style.color = 'var(--success)'; }
+      if (progressTitle) { progressTitle.innerHTML = `\u2726 Batch complete \u2014 ${state.completed} new avatars${savedMsg}`; progressTitle.style.color = 'var(--success)'; }
     }
+    fetchCatalogStats();
     renderMain();
   }
 
@@ -694,21 +912,6 @@
   function updateCostDisplay() {
     const price = PRICE_MAP[getModel()] || 0.003;
     document.getElementById('costEstimate').textContent = `$${(state.completed * price).toFixed(2)}`;
-  }
-
-  async function downloadAll() {
-    if (state.generated.length === 0) return;
-    log('Preparing download...', 'info'); setStatus('running', 'downloading...');
-    for (let i = 0; i < state.generated.length; i++) {
-      const item = state.generated[i];
-      try {
-        const res = await fetch(item.url); const blob = await res.blob(); const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url;
-        a.download = `nextgm_avatar_${String(item.index + 1).padStart(4, '0')}.png`; a.click();
-        URL.revokeObjectURL(url); await new Promise(r => setTimeout(r, 200));
-      } catch (err) { log(`Failed to download #${item.index + 1}: ${err.message}`, 'error'); }
-    }
-    log('Download complete', 'success'); setStatus('active', 'done');
   }
 </script>
 </body>
