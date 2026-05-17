@@ -238,6 +238,45 @@
     color: var(--text-mid);
   }
 
+  .panel-raw-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .panel-raw {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-mid);
+    background: var(--surface-hover);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    max-height: 400px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .panel.tools-panel { display: none; }
+  .panel.tools-panel.empty { display: none; }
+
+  .tools-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tools-link {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-mid);
+    text-decoration: none;
+  }
+
+  .tools-link:hover { text-decoration: underline; }
+
   .status-table-wrap {
     overflow-x: auto;
     margin-bottom: 20px;
@@ -537,6 +576,9 @@
     }
 
     .panel { padding: 16px; }
+
+    .panel.tools-panel { display: block; }
+    .panel.tools-panel.empty { display: none; }
   }
 </style>
 </head>
@@ -556,6 +598,7 @@
 
     <section class="main">
       <div class="panel" id="panelStatus"></div>
+      <div class="panel tools-panel" id="panelTools"></div>
       <div class="panel" id="panelSync"></div>
       <div class="panel" id="panelBacklog"></div>
     </section>
@@ -590,6 +633,7 @@ const PROJECTS = [
 let selectedRepo = PROJECTS[0].repo;
 const cache = {};
 let syncCache = null;
+let currentLoadController = new AbortController();
 
 const MACHINES = [
   { key: 'macbook-pro', label: 'MacBook Pro' },
@@ -645,10 +689,13 @@ function renderSidebar() {
 
 function selectProject(repo) {
   if (repo === selectedRepo) return;
+  currentLoadController.abort();
+  currentLoadController = new AbortController();
   selectedRepo = repo;
   renderSidebar();
   renderSync();
-  loadProject(repo);
+  renderTools();
+  loadProject(repo, currentLoadController.signal);
 }
 
 document.getElementById('sidebar').addEventListener('click', (e) => {
@@ -815,7 +862,8 @@ function renderLevelA() {
   try {
     parsed = parseBuildStatus(result.content);
   } catch (err) {
-    panel.append(el('pre', { class: 'panel-error' }, result.content));
+    panel.append(el('div', { class: 'panel-raw-note' }, 'Could not parse — showing raw content.'));
+    panel.append(el('pre', { class: 'panel-raw' }, result.content));
     return;
   }
 
@@ -953,7 +1001,8 @@ function renderLevelB() {
   try {
     parsed = parseBacklog(result.content);
   } catch (err) {
-    panel.append(el('pre', { class: 'panel-error' }, result.content));
+    panel.append(el('div', { class: 'panel-raw-note' }, 'Could not parse — showing raw content.'));
+    panel.append(el('pre', { class: 'panel-raw' }, result.content));
     return;
   }
 
@@ -965,6 +1014,31 @@ function renderLevelB() {
   parsed.sections.forEach((section, idx) => {
     panel.append(renderBacklogSection(section, idx === 0));
   });
+}
+
+// ─── Tools panel (mobile-only, §7.2) ─────────────────────────────────
+
+function renderTools() {
+  const panel = document.getElementById('panelTools');
+  panel.innerHTML = '';
+  const project = PROJECTS.find(p => p.repo === selectedRepo);
+  const tools = project?.tools || [];
+  if (tools.length === 0) {
+    panel.classList.add('empty');
+    return;
+  }
+  panel.classList.remove('empty');
+  panel.append(el('div', { class: 'panel-header' }, 'Tools'));
+  const list = el('div', { class: 'tools-list' });
+  for (const t of tools) {
+    list.append(el('a', {
+      class: 'tools-link',
+      href: t.url,
+      target: '_blank',
+      rel: 'noopener',
+    }, t.name));
+  }
+  panel.append(list);
 }
 
 // ─── Sync panel (§4.2) ───────────────────────────────────────────────
@@ -1015,26 +1089,27 @@ function renderSync() {
 
 // ─── Fetching (§8) ───────────────────────────────────────────────────
 
-async function fetchProjectFile(repo, file) {
+async function fetchProjectFile(repo, file, signal) {
   const url = `/api/project-status?repo=${encodeURIComponent(repo)}&file=${encodeURIComponent(file)}`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     if (res.status === 404) return { notFound: true };
     if (!res.ok) return { error: `HTTP ${res.status}` };
     const data = await res.json();
     if (!data.ok) return { error: data.error || 'Unknown error' };
     return { content: data.content, fetchedAt: data.fetchedAt };
   } catch (err) {
+    if (err.name === 'AbortError' || signal?.aborted) return { aborted: true };
     return { error: err.message };
   }
 }
 
-function fetchBuildStatus(repo) {
-  return fetchProjectFile(repo, 'docs/status/BUILD_STATUS.md');
+function fetchBuildStatus(repo, signal) {
+  return fetchProjectFile(repo, 'docs/status/BUILD_STATUS.md', signal);
 }
 
-function fetchBacklog(repo) {
-  return fetchProjectFile(repo, 'docs/status/BACKLOG.md');
+function fetchBacklog(repo, signal) {
+  return fetchProjectFile(repo, 'docs/status/BACKLOG.md', signal);
 }
 
 async function fetchSyncStatus() {
@@ -1057,7 +1132,7 @@ function storeBacklog(repo, result) {
   cache[repo].backlog = result;
 }
 
-async function loadProject(repo) {
+async function loadProject(repo, signal) {
   if (repo === selectedRepo) {
     renderLevelA();
     renderLevelB();
@@ -1065,14 +1140,16 @@ async function loadProject(repo) {
 
   const tasks = [];
   if (!cache[repo]?.buildStatus) {
-    tasks.push(fetchBuildStatus(repo).then(r => {
+    tasks.push(fetchBuildStatus(repo, signal).then(r => {
+      if (r.aborted) return;
       storeBuildStatus(repo, r);
       renderSidebar();
       if (repo === selectedRepo) renderLevelA();
     }));
   }
   if (!cache[repo]?.backlog) {
-    tasks.push(fetchBacklog(repo).then(r => {
+    tasks.push(fetchBacklog(repo, signal).then(r => {
+      if (r.aborted) return;
       storeBacklog(repo, r);
       if (repo === selectedRepo) renderLevelB();
     }));
@@ -1083,6 +1160,9 @@ async function loadProject(repo) {
 async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
+  currentLoadController.abort();
+  currentLoadController = new AbortController();
+  const signal = currentLoadController.signal;
   try {
     for (const p of PROJECTS) {
       if (cache[p.repo]) {
@@ -1096,13 +1176,18 @@ async function refreshAll() {
     renderSync();
 
     const tasks = PROJECTS.map(async (p) => {
-      const r = await fetchBuildStatus(p.repo);
+      const r = await fetchBuildStatus(p.repo, signal);
+      if (r.aborted) return;
       storeBuildStatus(p.repo, r);
     });
-    tasks.push(fetchBacklog(selectedRepo).then(r => storeBacklog(selectedRepo, r)));
+    tasks.push(fetchBacklog(selectedRepo, signal).then(r => {
+      if (r.aborted) return;
+      storeBacklog(selectedRepo, r);
+    }));
     tasks.push(fetchSyncStatus().then(r => { syncCache = r; }));
     await Promise.all(tasks);
 
+    if (signal.aborted) return;
     renderSidebar();
     renderLevelA();
     renderLevelB();
@@ -1120,7 +1205,8 @@ renderSidebar();
 renderLevelA();
 renderLevelB();
 renderSync();
-loadProject(selectedRepo);
+renderTools();
+loadProject(selectedRepo, currentLoadController.signal);
 fetchSyncStatus().then(r => { syncCache = r; renderSync(); });
 </script>
 </body>
