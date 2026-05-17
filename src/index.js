@@ -14,6 +14,10 @@ export default {
       return handleSyncStatus(request, env);
     }
 
+    if (url.pathname === '/api/project-status') {
+      return handleProjectStatus(request, env);
+    }
+
     if (url.pathname === '/api/contact') {
       return handleContact(request, env);
     }
@@ -222,5 +226,85 @@ async function handleFalProxy(request, env) {
 
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500, headers: corsHeaders });
+  }
+}
+
+// ─── Project Status Proxy ────────────────────────────────────────────
+
+const ALLOWED_REPOS = [
+  'football-sim',
+  'xoi-mobile',
+  'storyengine',
+  'xoplay-ffl',
+  'velocity-002',
+  'elemental-web',
+  'cven',
+];
+
+async function handleProjectStatus(request, env) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS });
+  }
+
+  if (request.method !== 'GET') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: CORS });
+  }
+
+  const url = new URL(request.url);
+  const repo = url.searchParams.get('repo');
+  const file = url.searchParams.get('file');
+
+  if (!repo) {
+    return Response.json({ ok: false, error: 'Missing required parameter: repo' }, { status: 400, headers: CORS });
+  }
+  if (!file) {
+    return Response.json({ ok: false, error: 'Missing required parameter: file' }, { status: 400, headers: CORS });
+  }
+
+  if (!/^[a-zA-Z0-9._-]+$/.test(repo)) {
+    return Response.json({ ok: false, error: 'Invalid repo format' }, { status: 400, headers: CORS });
+  }
+
+  if (file.startsWith('/') || file.includes('..') || !file.endsWith('.md')) {
+    return Response.json({ ok: false, error: 'Invalid file path' }, { status: 400, headers: CORS });
+  }
+
+  if (!ALLOWED_REPOS.includes(repo)) {
+    return Response.json({ ok: false, error: 'Unknown repo' }, { status: 400, headers: CORS });
+  }
+
+  if (!env.GITHUB_TOKEN) {
+    return Response.json({ ok: false, error: 'GitHub token not configured' }, { status: 401, headers: CORS });
+  }
+
+  try {
+    const githubUrl = `https://raw.githubusercontent.com/visceralcc/${repo}/main/${file}`;
+    const res = await fetch(githubUrl, {
+      headers: {
+        'Authorization': `token ${env.GITHUB_TOKEN}`,
+        'User-Agent': 'cven-worker',
+      },
+    });
+
+    if (res.status === 404) {
+      return Response.json({ ok: false, error: 'File not found', repo, file }, { status: 404, headers: CORS });
+    }
+    if (res.status === 403) {
+      return Response.json({ ok: false, error: 'GitHub rate limit exceeded. Try again later.' }, { status: 403, headers: CORS });
+    }
+    if (!res.ok) {
+      return Response.json({ ok: false, error: `GitHub returned status ${res.status}` }, { status: 500, headers: CORS });
+    }
+
+    const content = await res.text();
+    return Response.json({
+      ok: true,
+      repo,
+      file,
+      content,
+      fetchedAt: new Date().toISOString(),
+    }, { headers: CORS });
+  } catch (err) {
+    return Response.json({ ok: false, error: `Fetch failed: ${err.message}` }, { status: 500, headers: CORS });
   }
 }
