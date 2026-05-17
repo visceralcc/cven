@@ -617,6 +617,7 @@ const PROJECTS = [
     name: 'NextGM',
     repo: 'football-sim',
     desc: 'Football GM simulation',
+    branch: 'master',
     tools: [
       { name: 'Avatar Forge', url: '/nextgm/avatar-forge' },
       { name: 'Avatar Forge Guide', url: '/nextgm/avatar-forge-guide' },
@@ -1090,7 +1091,9 @@ function renderSync() {
 // ─── Fetching (§8) ───────────────────────────────────────────────────
 
 async function fetchProjectFile(repo, file, signal) {
-  const url = `/api/project-status?repo=${encodeURIComponent(repo)}&file=${encodeURIComponent(file)}`;
+  const project = PROJECTS.find(p => p.repo === repo);
+  const branch = project?.branch || 'main';
+  const url = `/api/project-status?repo=${encodeURIComponent(repo)}&file=${encodeURIComponent(file)}&branch=${encodeURIComponent(branch)}`;
   try {
     const res = await fetch(url, { signal });
     if (res.status === 404) return { notFound: true };

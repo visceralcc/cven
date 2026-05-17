@@ -278,7 +278,8 @@ async function handleProjectStatus(request, env) {
   }
 
   try {
-    const githubUrl = `https://raw.githubusercontent.com/visceralcc/${repo}/main/${file}`;
+    const branch = url.searchParams.get('branch') || 'main';
+    const githubUrl = `https://raw.githubusercontent.com/visceralcc/${repo}/${branch}/${file}`;
     const res = await fetch(githubUrl, {
       headers: {
         'Authorization': `token ${env.GITHUB_TOKEN}`,
