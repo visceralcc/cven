@@ -102,9 +102,7 @@
   }
 
   .sidebar-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: block;
     padding: 10px 14px;
     border-radius: var(--radius-sm);
     background: transparent;
@@ -115,6 +113,13 @@
   .sidebar-item.selected {
     background: var(--surface);
     border-color: var(--border);
+  }
+
+  .sidebar-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
 
   .sidebar-item-name {
@@ -136,6 +141,34 @@
   }
 
   .sidebar-dot.active { background: var(--accent-green); }
+
+  .sidebar-item-desc {
+    display: none;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .sidebar-tools {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    margin-left: 16px;
+  }
+
+  .sidebar-tool {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-mid);
+    text-decoration: none;
+  }
+
+  .sidebar-tool:hover { text-decoration: underline; }
+
+  .sidebar-item.selected .sidebar-item-desc { display: block; }
+  .sidebar-item.selected .sidebar-tools { display: flex; }
 
   .main {
     display: flex;
@@ -200,6 +233,11 @@
       padding: 8px 14px;
     }
 
+    .sidebar-item.selected .sidebar-item-desc,
+    .sidebar-item.selected .sidebar-tools {
+      display: none;
+    }
+
     .panel { padding: 16px; }
   }
 </style>
@@ -262,15 +300,43 @@ const PROJECTS = [
 
 let selectedRepo = PROJECTS[0].repo;
 
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 function renderSidebar() {
   const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = PROJECTS.map(p => `
-    <div class="sidebar-item${p.repo === selectedRepo ? ' selected' : ''}" data-repo="${p.repo}">
-      <span class="sidebar-item-name">${p.name}</span>
-      <span class="sidebar-dot"></span>
-    </div>
-  `).join('');
+  sidebar.innerHTML = PROJECTS.map(p => {
+    const tools = (p.tools || []).map(t => `
+      <a class="sidebar-tool" href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.name)}</a>
+    `).join('');
+    return `
+      <div class="sidebar-item${p.repo === selectedRepo ? ' selected' : ''}" data-repo="${escapeHtml(p.repo)}">
+        <div class="sidebar-item-row">
+          <span class="sidebar-item-name">${escapeHtml(p.name)}</span>
+          <span class="sidebar-dot"></span>
+        </div>
+        <div class="sidebar-item-desc">${escapeHtml(p.desc)}</div>
+        ${tools ? `<div class="sidebar-tools">${tools}</div>` : ''}
+      </div>
+    `;
+  }).join('');
 }
+
+function selectProject(repo) {
+  if (repo === selectedRepo) return;
+  selectedRepo = repo;
+  renderSidebar();
+}
+
+document.getElementById('sidebar').addEventListener('click', (e) => {
+  const item = e.target.closest('.sidebar-item');
+  if (!item) return;
+  if (e.target.closest('.sidebar-tool')) return;
+  selectProject(item.dataset.repo);
+});
 
 renderSidebar();
 </script>
