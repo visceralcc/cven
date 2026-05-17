@@ -88,6 +88,17 @@
     color: var(--text);
   }
 
+  .refresh-btn.spinning {
+    opacity: 0.55;
+    pointer-events: none;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+
   .grid {
     display: grid;
     grid-template-columns: 220px 1fr;
@@ -198,6 +209,119 @@
     color: var(--text-muted);
   }
 
+  .panel-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: -4px;
+    margin-bottom: 16px;
+  }
+
+  .panel-loading {
+    font-size: 14px;
+    color: var(--text-muted);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  .panel-empty,
+  .panel-error {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .panel-empty code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    background: var(--surface-hover);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text-mid);
+  }
+
+  .status-table-wrap {
+    overflow-x: auto;
+    margin-bottom: 20px;
+  }
+
+  .status-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .status-table th {
+    font-family: var(--condensed);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: left;
+    padding: 0 12px 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .status-table th.status-col {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .status-table td {
+    font-size: 14px;
+    color: var(--text);
+    padding: 0 12px;
+    height: 36px;
+    vertical-align: middle;
+  }
+
+  .status-table tbody tr:nth-child(even) td {
+    background: var(--surface-hover);
+  }
+
+  .status-table td.status-cell {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .status-table td.status-cell.status-complete { color: var(--accent-green); }
+  .status-table td.status-cell.status-pending { color: var(--text-muted); }
+
+  .sprint-heading {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .sprint-body p {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-mid);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .sprint-body ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 8px;
+  }
+
+  .sprint-body li {
+    font-size: 14px;
+    color: var(--text-mid);
+    line-height: 1.6;
+    padding-left: 18px;
+    position: relative;
+  }
+
+  .sprint-body li::before {
+    content: '•';
+    position: absolute;
+    left: 4px;
+    color: var(--text-muted);
+  }
+
   .footer {
     margin-top: 32px;
     padding-top: 20px;
@@ -257,10 +381,7 @@
     <aside class="sidebar" id="sidebar"></aside>
 
     <section class="main">
-      <div class="panel">
-        <div class="panel-header">Status</div>
-        <div class="panel-placeholder">Status will appear here.</div>
-      </div>
+      <div class="panel" id="panelStatus"></div>
       <div class="panel">
         <div class="panel-header">Sync</div>
         <div class="panel-placeholder">Sync status will appear here.</div>
@@ -299,11 +420,33 @@ const PROJECTS = [
 ];
 
 let selectedRepo = PROJECTS[0].repo;
+const cache = {};
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────
+
+function hasBuildStatusData(repo) {
+  const r = cache[repo]?.buildStatus;
+  return !!(r && r.content !== undefined);
 }
 
 function renderSidebar() {
@@ -312,11 +455,12 @@ function renderSidebar() {
     const tools = (p.tools || []).map(t => `
       <a class="sidebar-tool" href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.name)}</a>
     `).join('');
+    const dotClass = hasBuildStatusData(p.repo) ? 'sidebar-dot active' : 'sidebar-dot';
     return `
       <div class="sidebar-item${p.repo === selectedRepo ? ' selected' : ''}" data-repo="${escapeHtml(p.repo)}">
         <div class="sidebar-item-row">
           <span class="sidebar-item-name">${escapeHtml(p.name)}</span>
-          <span class="sidebar-dot"></span>
+          <span class="${dotClass}"></span>
         </div>
         <div class="sidebar-item-desc">${escapeHtml(p.desc)}</div>
         ${tools ? `<div class="sidebar-tools">${tools}</div>` : ''}
@@ -329,6 +473,7 @@ function selectProject(repo) {
   if (repo === selectedRepo) return;
   selectedRepo = repo;
   renderSidebar();
+  loadProject(repo);
 }
 
 document.getElementById('sidebar').addEventListener('click', (e) => {
@@ -338,7 +483,239 @@ document.getElementById('sidebar').addEventListener('click', (e) => {
   selectProject(item.dataset.repo);
 });
 
+// ─── BUILD_STATUS.md parser (§6.2) ───────────────────────────────────
+
+function parseBuildStatus(content) {
+  const updatedMatch = content.match(/last updated[:\s]*(\d{4}-\d{2}-\d{2})/i);
+  const lastUpdated = updatedMatch ? updatedMatch[1] : null;
+
+  const lines = content.split('\n');
+
+  const tableRows = [];
+  let tableEndIdx = -1;
+  let inTable = false;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    const isRow = trimmed.startsWith('|') && trimmed.endsWith('|');
+    if (!inTable && isRow) inTable = true;
+    if (inTable) {
+      if (isRow) {
+        tableRows.push(trimmed);
+        tableEndIdx = i;
+      } else {
+        break;
+      }
+    }
+  }
+
+  const table = [];
+  if (tableRows.length >= 3) {
+    for (let r = 2; r < tableRows.length; r++) {
+      const cells = tableRows[r].split('|').slice(1, -1).map(c => c.trim());
+      if (cells.length >= 2) table.push({ system: cells[0], status: cells[1] });
+    }
+  }
+
+  let sprint = null;
+  const sprintRe = /sprint|\d{2}\.\d{2}\.\d{2}/i;
+  const startSearch = tableEndIdx >= 0 ? tableEndIdx + 1 : 0;
+  for (let i = startSearch; i < lines.length; i++) {
+    if (lines[i].startsWith('## ')) {
+      const heading = lines[i].slice(3).trim();
+      if (!sprintRe.test(heading)) continue;
+      const body = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].startsWith('## ')) break;
+        body.push(lines[j]);
+      }
+      sprint = { heading, body: body.join('\n').trim() };
+      break;
+    }
+  }
+
+  return { lastUpdated, table, sprint };
+}
+
+// ─── Level A rendering ───────────────────────────────────────────────
+
+function formatUpdatedDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+  });
+}
+
+function statusCellClass(status) {
+  const s = status.trim();
+  if (s.startsWith('✅')) return 'status-cell status-complete';
+  if (s.startsWith('🔲')) return 'status-cell status-pending';
+  return 'status-cell';
+}
+
+function renderStatusTable(rows) {
+  const wrap = el('div', { class: 'status-table-wrap' });
+  const table = el('table', { class: 'status-table' });
+  const thead = el('thead');
+  thead.append(el('tr', {},
+    el('th', {}, 'System'),
+    el('th', { class: 'status-col' }, 'Status'),
+  ));
+  table.append(thead);
+  const tbody = el('tbody');
+  for (const row of rows) {
+    tbody.append(el('tr', {},
+      el('td', {}, row.system),
+      el('td', { class: statusCellClass(row.status) }, row.status),
+    ));
+  }
+  table.append(tbody);
+  wrap.append(table);
+  return wrap;
+}
+
+function renderSprintBody(text) {
+  const body = el('div', { class: 'sprint-body' });
+  const lines = text.split('\n');
+  let para = [];
+  let bullets = [];
+
+  const flushPara = () => {
+    if (para.length) body.append(el('p', {}, para.join(' ')));
+    para = [];
+  };
+  const flushBullets = () => {
+    if (bullets.length) {
+      const ul = el('ul');
+      for (const item of bullets) ul.append(el('li', {}, item));
+      body.append(ul);
+    }
+    bullets = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    const bullet = line.match(/^[-*]\s+(.*)/);
+    if (bullet) {
+      flushPara();
+      bullets.push(bullet[1]);
+    } else if (line === '') {
+      flushPara();
+      flushBullets();
+    } else {
+      flushBullets();
+      para.push(line);
+    }
+  }
+  flushPara();
+  flushBullets();
+  return body;
+}
+
+function renderLevelA() {
+  const panel = document.getElementById('panelStatus');
+  panel.innerHTML = '';
+  panel.append(el('div', { class: 'panel-header' }, 'Status'));
+
+  const result = cache[selectedRepo]?.buildStatus;
+
+  if (!result) {
+    panel.append(el('div', { class: 'panel-loading' }, 'Loading…'));
+    return;
+  }
+  if (result.notFound) {
+    const empty = el('div', { class: 'panel-empty' });
+    empty.append(document.createTextNode('No BUILD_STATUS.md found. Create one at '));
+    empty.append(el('code', {}, 'docs/status/BUILD_STATUS.md'));
+    empty.append(document.createTextNode(' to surface status here.'));
+    panel.append(empty);
+    return;
+  }
+  if (result.error) {
+    panel.append(el('div', { class: 'panel-error' }, 'Failed to load status. Try refreshing.'));
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = parseBuildStatus(result.content);
+  } catch (err) {
+    panel.append(el('pre', { class: 'panel-error' }, result.content));
+    return;
+  }
+
+  if (parsed.lastUpdated) {
+    panel.append(el('div', { class: 'panel-meta' }, `Last updated ${formatUpdatedDate(parsed.lastUpdated)}`));
+  }
+  if (parsed.table.length) {
+    panel.append(renderStatusTable(parsed.table));
+  }
+  if (parsed.sprint) {
+    panel.append(el('div', { class: 'sprint-heading' }, parsed.sprint.heading));
+    panel.append(renderSprintBody(parsed.sprint.body));
+  }
+}
+
+// ─── Fetching (§8) ───────────────────────────────────────────────────
+
+async function fetchBuildStatus(repo) {
+  const file = 'docs/status/BUILD_STATUS.md';
+  const url = `/api/project-status?repo=${encodeURIComponent(repo)}&file=${encodeURIComponent(file)}`;
+  try {
+    const res = await fetch(url);
+    if (res.status === 404) return { notFound: true };
+    if (!res.ok) return { error: `HTTP ${res.status}` };
+    const data = await res.json();
+    if (!data.ok) return { error: data.error || 'Unknown error' };
+    return { content: data.content, fetchedAt: data.fetchedAt };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+function storeBuildStatus(repo, result) {
+  cache[repo] = cache[repo] || {};
+  cache[repo].buildStatus = result;
+}
+
+async function loadProject(repo) {
+  if (cache[repo]?.buildStatus) {
+    if (repo === selectedRepo) renderLevelA();
+    return;
+  }
+  if (repo === selectedRepo) renderLevelA();
+  const result = await fetchBuildStatus(repo);
+  storeBuildStatus(repo, result);
+  renderSidebar();
+  if (repo === selectedRepo) renderLevelA();
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  try {
+    for (const p of PROJECTS) {
+      if (cache[p.repo]) delete cache[p.repo].buildStatus;
+    }
+    if (selectedRepo) renderLevelA();
+    await Promise.all(PROJECTS.map(async (p) => {
+      const result = await fetchBuildStatus(p.repo);
+      storeBuildStatus(p.repo, result);
+    }));
+    renderSidebar();
+    renderLevelA();
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+
+// ─── Init ────────────────────────────────────────────────────────────
+
 renderSidebar();
+renderLevelA();
+loadProject(selectedRepo);
 </script>
 </body>
 </html>
