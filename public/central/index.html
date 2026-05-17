@@ -456,6 +456,46 @@
     letter-spacing: 0.02em;
   }
 
+  .sync-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sync-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sync-machine {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-mid);
+  }
+
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .sync-dot.clean { background: var(--text); }
+  .sync-dot.behind { background: var(--text-muted); }
+  .sync-dot.dirty { background: #b8b9c2; }
+  .sync-dot.absent { background: var(--dot-inactive); }
+
   .footer {
     margin-top: 32px;
     padding-top: 20px;
@@ -516,10 +556,7 @@
 
     <section class="main">
       <div class="panel" id="panelStatus"></div>
-      <div class="panel">
-        <div class="panel-header">Sync</div>
-        <div class="panel-placeholder">Sync status will appear here.</div>
-      </div>
+      <div class="panel" id="panelSync"></div>
       <div class="panel" id="panelBacklog"></div>
     </section>
   </div>
@@ -552,6 +589,12 @@ const PROJECTS = [
 
 let selectedRepo = PROJECTS[0].repo;
 const cache = {};
+let syncCache = null;
+
+const MACHINES = [
+  { key: 'macbook-pro', label: 'MacBook Pro' },
+  { key: 'mac-mini', label: 'Mac Mini' },
+];
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({
@@ -604,6 +647,7 @@ function selectProject(repo) {
   if (repo === selectedRepo) return;
   selectedRepo = repo;
   renderSidebar();
+  renderSync();
   loadProject(repo);
 }
 
@@ -923,6 +967,52 @@ function renderLevelB() {
   });
 }
 
+// ─── Sync panel (§4.2) ───────────────────────────────────────────────
+
+function getMachineStatus(m) {
+  if (!m) return { dotClass: 'absent', label: 'Not cloned' };
+  if ((m.dirty || 0) > 0) return { dotClass: 'dirty', label: `${m.dirty} dirty` };
+  if ((m.behind || 0) > 0) return { dotClass: 'behind', label: `${m.behind} behind` };
+  if (m.status === 'dirty') return { dotClass: 'dirty', label: 'Dirty' };
+  if (m.status === 'behind') return { dotClass: 'behind', label: 'Behind' };
+  return { dotClass: 'clean', label: 'Clean' };
+}
+
+function renderSync() {
+  const panel = document.getElementById('panelSync');
+  panel.innerHTML = '';
+  panel.append(el('div', { class: 'panel-header' }, 'Sync'));
+
+  if (!syncCache) {
+    panel.append(el('div', { class: 'panel-loading' }, 'Loading…'));
+    return;
+  }
+  if (syncCache.error) {
+    panel.append(el('div', { class: 'panel-error' }, 'Sync status unavailable.'));
+    return;
+  }
+
+  const repoEntry = (syncCache.repos || []).find(r => r.name === selectedRepo);
+  if (!repoEntry) {
+    panel.append(el('div', { class: 'panel-empty' }, 'No sync data for this repo'));
+    return;
+  }
+
+  const rows = el('div', { class: 'sync-rows' });
+  for (const { key, label } of MACHINES) {
+    const machineData = repoEntry.machines?.[key];
+    const { dotClass, label: statusLabel } = getMachineStatus(machineData);
+    const row = el('div', { class: 'sync-row' });
+    row.append(el('span', { class: 'sync-machine' }, label));
+    const status = el('div', { class: 'sync-status' });
+    status.append(el('span', { class: `sync-dot ${dotClass}` }));
+    status.append(document.createTextNode(statusLabel));
+    row.append(status);
+    rows.append(row);
+  }
+  panel.append(rows);
+}
+
 // ─── Fetching (§8) ───────────────────────────────────────────────────
 
 async function fetchProjectFile(repo, file) {
@@ -945,6 +1035,16 @@ function fetchBuildStatus(repo) {
 
 function fetchBacklog(repo) {
   return fetchProjectFile(repo, 'docs/status/BACKLOG.md');
+}
+
+async function fetchSyncStatus() {
+  try {
+    const res = await fetch('/api/sync-status');
+    if (!res.ok) return { error: `HTTP ${res.status}` };
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
 }
 
 function storeBuildStatus(repo, result) {
@@ -990,19 +1090,23 @@ async function refreshAll() {
         if (p.repo === selectedRepo) delete cache[p.repo].backlog;
       }
     }
+    syncCache = null;
     renderLevelA();
     renderLevelB();
+    renderSync();
 
     const tasks = PROJECTS.map(async (p) => {
       const r = await fetchBuildStatus(p.repo);
       storeBuildStatus(p.repo, r);
     });
     tasks.push(fetchBacklog(selectedRepo).then(r => storeBacklog(selectedRepo, r)));
+    tasks.push(fetchSyncStatus().then(r => { syncCache = r; }));
     await Promise.all(tasks);
 
     renderSidebar();
     renderLevelA();
     renderLevelB();
+    renderSync();
   } finally {
     btn.classList.remove('spinning');
   }
@@ -1015,7 +1119,9 @@ document.getElementById('refreshBtn').addEventListener('click', refreshAll);
 renderSidebar();
 renderLevelA();
 renderLevelB();
+renderSync();
 loadProject(selectedRepo);
+fetchSyncStatus().then(r => { syncCache = r; renderSync(); });
 </script>
 </body>
 </html>
