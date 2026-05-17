@@ -322,6 +322,140 @@
     color: var(--text-muted);
   }
 
+  .backlog-section + .backlog-section {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .backlog-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .backlog-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--condensed);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .backlog-chevron {
+    width: 0;
+    height: 0;
+    border-left: 5px solid var(--text-muted);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform 0.15s;
+  }
+
+  .backlog-section.expanded .backlog-chevron {
+    transform: rotate(90deg);
+  }
+
+  .backlog-section-count {
+    font-family: var(--condensed);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .backlog-section-body {
+    display: none;
+    padding: 0 0 12px;
+  }
+
+  .backlog-section.expanded .backlog-section-body {
+    display: block;
+  }
+
+  .backlog-subgroup + .backlog-subgroup {
+    margin-top: 12px;
+  }
+
+  .backlog-subgroup-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-mid);
+    margin: 0 0 6px;
+    padding-left: 8px;
+  }
+
+  .backlog-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .backlog-subgroup.titled .backlog-items {
+    padding-left: 8px;
+  }
+
+  .backlog-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .backlog-checkbox {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    border: 1.5px solid var(--text-muted);
+    border-radius: 3px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .backlog-item.done .backlog-checkbox {
+    border-color: var(--accent-green);
+    background: var(--accent-green);
+  }
+
+  .backlog-item.done .backlog-checkbox::before {
+    content: '\2713';
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .backlog-item.done .backlog-text {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
+  .backlog-text { flex: 1; }
+
+  .backlog-tag {
+    display: inline-block;
+    font-family: var(--condensed);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--surface-hover);
+    border: 1px solid var(--border-subtle);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: 1px;
+    letter-spacing: 0.02em;
+  }
+
   .footer {
     margin-top: 32px;
     padding-top: 20px;
@@ -386,10 +520,7 @@
         <div class="panel-header">Sync</div>
         <div class="panel-placeholder">Sync status will appear here.</div>
       </div>
-      <div class="panel">
-        <div class="panel-header">Backlog</div>
-        <div class="panel-placeholder">Backlog will appear here.</div>
-      </div>
+      <div class="panel" id="panelBacklog"></div>
     </section>
   </div>
 
@@ -656,10 +787,145 @@ function renderLevelA() {
   }
 }
 
+// ─── BACKLOG.md parser (§6.3) ────────────────────────────────────────
+
+function parseBacklog(content) {
+  const lines = content.split('\n');
+  const sections = [];
+  let currentSection = null;
+  let currentSubgroup = null;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+
+    if (line.startsWith('## ')) {
+      currentSection = {
+        title: line.slice(3).trim(),
+        subgroups: [],
+        doneCount: 0,
+        totalCount: 0,
+      };
+      sections.push(currentSection);
+      currentSubgroup = null;
+      continue;
+    }
+
+    if (!currentSection) continue;
+
+    if (line.startsWith('### ')) {
+      currentSubgroup = { title: line.slice(4).trim(), items: [] };
+      currentSection.subgroups.push(currentSubgroup);
+      continue;
+    }
+
+    const task = line.match(/^-\s+(✅|🔲)\s+(.+)$/);
+    if (!task) continue;
+
+    const done = task[1] === '✅';
+    const tags = [];
+    const text = task[2]
+      .replace(/\[([^\]]+)\]/g, (_, t) => { tags.push(t.trim()); return ''; })
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    if (!currentSubgroup) {
+      currentSubgroup = { title: null, items: [] };
+      currentSection.subgroups.push(currentSubgroup);
+    }
+    currentSubgroup.items.push({ done, text, tags });
+    currentSection.totalCount++;
+    if (done) currentSection.doneCount++;
+  }
+
+  return { sections };
+}
+
+// ─── Level B rendering ───────────────────────────────────────────────
+
+function renderBacklogItem(item) {
+  const row = el('div', { class: 'backlog-item' + (item.done ? ' done' : '') });
+  row.append(el('div', { class: 'backlog-checkbox' }));
+  const text = el('div', { class: 'backlog-text' });
+  text.append(document.createTextNode(item.text));
+  for (const tag of item.tags) {
+    text.append(el('span', { class: 'backlog-tag' }, tag));
+  }
+  row.append(text);
+  return row;
+}
+
+function renderBacklogSection(section, expanded) {
+  const sec = el('div', { class: 'backlog-section' + (expanded ? ' expanded' : '') });
+
+  const header = el('div', { class: 'backlog-section-header' });
+  const title = el('div', { class: 'backlog-section-title' });
+  title.append(el('span', { class: 'backlog-chevron' }));
+  title.append(document.createTextNode(section.title));
+  header.append(title);
+  header.append(el('div', { class: 'backlog-section-count' },
+    `${section.doneCount} of ${section.totalCount}`));
+  sec.append(header);
+
+  const body = el('div', { class: 'backlog-section-body' });
+  for (const sg of section.subgroups) {
+    const wrap = el('div', { class: 'backlog-subgroup' + (sg.title ? ' titled' : '') });
+    if (sg.title) wrap.append(el('div', { class: 'backlog-subgroup-title' }, sg.title));
+    const items = el('div', { class: 'backlog-items' });
+    for (const item of sg.items) items.append(renderBacklogItem(item));
+    wrap.append(items);
+    body.append(wrap);
+  }
+  sec.append(body);
+
+  header.addEventListener('click', () => sec.classList.toggle('expanded'));
+  return sec;
+}
+
+function renderLevelB() {
+  const panel = document.getElementById('panelBacklog');
+  panel.innerHTML = '';
+  panel.append(el('div', { class: 'panel-header' }, 'Backlog'));
+
+  const result = cache[selectedRepo]?.backlog;
+
+  if (!result) {
+    panel.append(el('div', { class: 'panel-loading' }, 'Loading…'));
+    return;
+  }
+  if (result.notFound) {
+    const empty = el('div', { class: 'panel-empty' });
+    empty.append(document.createTextNode('No BACKLOG.md found. Create one at '));
+    empty.append(el('code', {}, 'docs/status/BACKLOG.md'));
+    empty.append(document.createTextNode(' to surface the backlog here.'));
+    panel.append(empty);
+    return;
+  }
+  if (result.error) {
+    panel.append(el('div', { class: 'panel-error' }, 'Failed to load backlog. Try refreshing.'));
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = parseBacklog(result.content);
+  } catch (err) {
+    panel.append(el('pre', { class: 'panel-error' }, result.content));
+    return;
+  }
+
+  if (parsed.sections.length === 0) {
+    panel.append(el('div', { class: 'panel-empty' }, 'Backlog is empty.'));
+    return;
+  }
+
+  parsed.sections.forEach((section, idx) => {
+    panel.append(renderBacklogSection(section, idx === 0));
+  });
+}
+
 // ─── Fetching (§8) ───────────────────────────────────────────────────
 
-async function fetchBuildStatus(repo) {
-  const file = 'docs/status/BUILD_STATUS.md';
+async function fetchProjectFile(repo, file) {
   const url = `/api/project-status?repo=${encodeURIComponent(repo)}&file=${encodeURIComponent(file)}`;
   try {
     const res = await fetch(url);
@@ -673,21 +939,45 @@ async function fetchBuildStatus(repo) {
   }
 }
 
+function fetchBuildStatus(repo) {
+  return fetchProjectFile(repo, 'docs/status/BUILD_STATUS.md');
+}
+
+function fetchBacklog(repo) {
+  return fetchProjectFile(repo, 'docs/status/BACKLOG.md');
+}
+
 function storeBuildStatus(repo, result) {
   cache[repo] = cache[repo] || {};
   cache[repo].buildStatus = result;
 }
 
+function storeBacklog(repo, result) {
+  cache[repo] = cache[repo] || {};
+  cache[repo].backlog = result;
+}
+
 async function loadProject(repo) {
-  if (cache[repo]?.buildStatus) {
-    if (repo === selectedRepo) renderLevelA();
-    return;
+  if (repo === selectedRepo) {
+    renderLevelA();
+    renderLevelB();
   }
-  if (repo === selectedRepo) renderLevelA();
-  const result = await fetchBuildStatus(repo);
-  storeBuildStatus(repo, result);
-  renderSidebar();
-  if (repo === selectedRepo) renderLevelA();
+
+  const tasks = [];
+  if (!cache[repo]?.buildStatus) {
+    tasks.push(fetchBuildStatus(repo).then(r => {
+      storeBuildStatus(repo, r);
+      renderSidebar();
+      if (repo === selectedRepo) renderLevelA();
+    }));
+  }
+  if (!cache[repo]?.backlog) {
+    tasks.push(fetchBacklog(repo).then(r => {
+      storeBacklog(repo, r);
+      if (repo === selectedRepo) renderLevelB();
+    }));
+  }
+  await Promise.all(tasks);
 }
 
 async function refreshAll() {
@@ -695,15 +985,24 @@ async function refreshAll() {
   btn.classList.add('spinning');
   try {
     for (const p of PROJECTS) {
-      if (cache[p.repo]) delete cache[p.repo].buildStatus;
+      if (cache[p.repo]) {
+        delete cache[p.repo].buildStatus;
+        if (p.repo === selectedRepo) delete cache[p.repo].backlog;
+      }
     }
-    if (selectedRepo) renderLevelA();
-    await Promise.all(PROJECTS.map(async (p) => {
-      const result = await fetchBuildStatus(p.repo);
-      storeBuildStatus(p.repo, result);
-    }));
+    renderLevelA();
+    renderLevelB();
+
+    const tasks = PROJECTS.map(async (p) => {
+      const r = await fetchBuildStatus(p.repo);
+      storeBuildStatus(p.repo, r);
+    });
+    tasks.push(fetchBacklog(selectedRepo).then(r => storeBacklog(selectedRepo, r)));
+    await Promise.all(tasks);
+
     renderSidebar();
     renderLevelA();
+    renderLevelB();
   } finally {
     btn.classList.remove('spinning');
   }
@@ -715,6 +1014,7 @@ document.getElementById('refreshBtn').addEventListener('click', refreshAll);
 
 renderSidebar();
 renderLevelA();
+renderLevelB();
 loadProject(selectedRepo);
 </script>
 </body>
