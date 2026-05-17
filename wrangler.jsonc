@@ -11,5 +11,10 @@
 			"binding": "SYNC_STATUS",
 			"id": "d582f83dc546466ca9653712d6efffdd"
 		}
+	],
+	"send_email": [
+		{
+			"name": "EMAIL"
+		}
 	]
 }

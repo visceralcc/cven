@@ -14,9 +14,50 @@ export default {
       return handleSyncStatus(request, env);
     }
 
+    if (url.pathname === '/api/contact') {
+      return handleContact(request, env);
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
+
+// ─── Contact Form Handler ────────────────────────────────────────────
+
+async function handleContact(request, env) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS });
+  }
+
+  if (request.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: CORS });
+  }
+
+  try {
+    const { name, email, message } = await request.json();
+
+    if (!name || !email || !message) {
+      return Response.json({ error: 'All fields are required' }, { status: 400, headers: CORS });
+    }
+
+    // Send email via Cloudflare Email Service
+    await env.EMAIL.send({
+      from: 'noreply@cven.cc',
+      to: 'info@cven.cc',
+      subject: `Contact Form: ${name}`,
+      text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
+      html: `<h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+        <hr>
+        <p>${message.replace(/\n/g, '<br>')}</p>`,
+    });
+
+    return Response.json({ ok: true }, { headers: CORS });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500, headers: CORS });
+  }
+}
 
 // ─── Sync Status API ─────────────────────────────────────────────────
 

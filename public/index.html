@@ -3,20 +3,647 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Civil Engine</title>
+  <title>Civil Engine LLC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --text-secondary: #555;
+      --text-muted: #888;
+      --border: #e0e0e0;
+      --surface: #f5f5f5;
+      --accent: #1a1a1a;
+      --font-body: 'Barlow', sans-serif;
+      --font-display: 'Barlow Condensed', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
     body {
       min-height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: white;
+      flex-direction: column;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
-    img { max-width: 90%; width: 400px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo img {
+      height: 42px;
+      width: auto;
+    }
+
+    nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    nav a:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    nav a.active {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    main {
+      flex: 1;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 32px;
+    }
+
+    .hero {
+      padding: 120px 32px 100px;
+      text-align: center;
+    }
+
+    .hero-logo {
+      width: 240px;
+      height: auto;
+      margin-bottom: 40px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-body);
+      font-size: 54px;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      gap: 16px;
+    }
+
+    .hero-cta a {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.85;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface);
+    }
+
+    /* Work */
+    .work-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+      max-width: 800px;
+    }
+
+    .work-item h3 {
+      font-family: var(--font-body);
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .work-item .work-desc {
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .work-item img {
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+    }
+
+    .work-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .work-header h2 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+    }
+
+    /* About */
+    .about-content {
+      max-width: 680px;
+    }
+
+    .about-content h2 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .about-content p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .about-content p:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .about-details {
+      margin-top: 48px;
+      padding-top: 48px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+    }
+
+    .about-detail h4 {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .about-detail p {
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    /* Contact */
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .contact-info h2 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .contact-info p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .contact-email {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .contact-email:hover {
+      text-decoration: underline;
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-field input,
+    .form-field textarea {
+      font-family: var(--font-body);
+      font-size: 15px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    .form-field input:focus,
+    .form-field textarea:focus {
+      border-color: #999;
+    }
+
+    .form-field textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-submit {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 14px 32px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      align-self: flex-start;
+    }
+
+    .form-submit:hover {
+      opacity: 0.85;
+    }
+
+    .form-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .form-status {
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .form-status.success {
+      display: block;
+      background: #e8f4e8;
+      color: #2d7a2d;
+    }
+
+    .form-status.error {
+      display: block;
+      background: #fce8e8;
+      color: #c33;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+      .header-inner { padding: 14px 20px; }
+      nav { gap: 2px; }
+      nav a { padding: 6px 10px; font-size: 13px; }
+      .hero { padding: 80px 20px 60px; }
+      .hero h1 { font-size: 34px; }
+      .hero p { font-size: 16px; }
+      .hero-logo { width: 120px; }
+      section { padding: 60px 20px; }
+      .contact-layout { grid-template-columns: 1fr; gap: 48px; }
+      .work-grid { max-width: 100%; }
+      .about-details { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (max-width: 480px) {
+      nav a { padding: 6px 8px; font-size: 12px; }
+      .hero h1 { font-size: 28px; }
+      .hero-cta { flex-direction: column; gap: 10px; }
+    }
   </style>
 </head>
 <body>
-  <img src="/civil-engine-logo.png" alt="Civil Engine">
+
+  <header>
+    <div class="header-inner">
+      <a href="#home" class="logo" onclick="navigate('home')">
+        <img src="/civil-engine-logo.png" alt="Civil Engine">
+      </a>
+      <nav id="main-nav">
+        <a href="#home" data-page="home" class="active">Home</a>
+        <a href="#work" data-page="work">Work</a>
+        <a href="#about" data-page="about">About</a>
+        <a href="#contact" data-page="contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <div id="page-home" class="page active">
+      <section class="hero">
+        <img src="/civil-engine-logo.png" alt="Civil Engine" class="hero-logo">
+        <h1>Experiences Shaped by<br>Thoughtful Design</h1>
+        <p>Civil Engine is a multi-disciplinary studio that crafts experiences with personality, narrative depth, and delightful user experiences at the center of everything we make.</p>
+      </section>
+    </div>
+
+    <div id="page-work" class="page">
+      <section>
+        <div class="work-grid">
+          <div class="work-item">
+            <h3>Aston Martin UX</h3>
+            <p class="work-desc">As the automobile evolves, so does its interface. Redefining interaction of the instrument cluster for the Aston Martin Rapide S.</p>
+            <img src="/work/1.jpeg" alt="Aston Martin UX">
+          </div>
+          <div class="work-item">
+            <h3>Electronic Arts</h3>
+            <p class="work-desc">Need for Speed Identity</p>
+            <img src="/work/2.jpeg" alt="Electronic Arts Need for Speed">
+          </div>
+          <div class="work-item">
+            <h3>Encode</h3>
+            <p class="work-desc">Animation for Wired Magazine</p>
+            <img src="/work/3.jpeg" alt="Encode">
+          </div>
+          <div class="work-item">
+            <h3>UXCA</h3>
+            <p class="work-desc">Interior design for Samsung America user experience center</p>
+            <img src="/work/4.jpeg" alt="UXCA">
+          </div>
+          <div class="work-item">
+            <h3>Ironworks</h3>
+            <p class="work-desc">Interaction design for iPad strategy UX</p>
+            <img src="/work/5.jpeg" alt="Ironworks">
+          </div>
+          <div class="work-item">
+            <h3>Piper Biosciences</h3>
+            <p class="work-desc">Identity and packaging design</p>
+            <img src="/work/6.jpeg" alt="Piper Biosciences">
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="page-about" class="page">
+      <section>
+        <div class="about-content">
+          <h2>About Civil Engine</h2>
+          <p>Civil Engine is a design and product studio with nearly two decades of experience shipping software at the highest level, including work with numerous clients like Nike, Pixar, EA and Aston Martin.</p>
+          <p>We build the kinds of products we've always wanted to use: software that leads with thoughtful design, rewards attention to detail, and creates experiences people genuinely enjoy.</p>
+          <p>Our approach puts craft, clarity, and respect for the user at the center of every decision. Whether it's a consumer app, a creative tool, or something entirely new, we believe great software starts with great design.</p>
+        </div>
+        <div class="about-details">
+          <div class="about-detail">
+            <h4>Contact</h4>
+            <p><a href="mailto:info@cven.cc" style="color: var(--text); text-decoration: underline;">info@cven.cc</a></p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="page-contact" class="page">
+      <section>
+        <div class="contact-layout">
+          <div class="contact-info">
+            <h2>Get in Touch</h2>
+            <p>Have a question, interested in working together, or just want to say hello? We'd love to hear from you.</p>
+            <a href="mailto:info@cven.cc" class="contact-email">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              info@cven.cc
+            </a>
+          </div>
+          <div>
+            <div class="contact-form" id="contact-form">
+              <div class="form-field">
+                <label for="contact-name">Name</label>
+                <input type="text" id="contact-name" placeholder="Your name" required>
+              </div>
+              <div class="form-field">
+                <label for="contact-email">Email</label>
+                <input type="email" id="contact-email" placeholder="your@email.com" required>
+              </div>
+              <div class="form-field">
+                <label for="contact-message">Message</label>
+                <textarea id="contact-message" placeholder="How can we help?" required></textarea>
+              </div>
+              <button class="form-submit" id="contact-submit" onclick="submitContact()">Send Message</button>
+              <div class="form-status" id="form-status"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        &copy; 2026 Civil Engine LLC. All rights reserved.
+      </div>
+      <div class="footer-links">
+        <a href="mailto:info@cven.cc">info@cven.cc</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function navigate(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active'));
+
+      const target = document.getElementById('page-' + page);
+      if (target) {
+        target.classList.add('active');
+        window.scrollTo(0, 0);
+      }
+
+      const navLink = document.querySelector(`#main-nav a[data-page="${page}"]`);
+      if (navLink) navLink.classList.add('active');
+
+      const titles = {
+        home: 'Civil Engine LLC',
+        work: 'Work | Civil Engine',
+        about: 'About | Civil Engine',
+        contact: 'Contact | Civil Engine'
+      };
+      document.title = titles[page] || 'Civil Engine LLC';
+    }
+
+    function handleHash() {
+      const hash = window.location.hash.replace('#', '') || 'home';
+      navigate(hash);
+    }
+
+    window.addEventListener('hashchange', handleHash);
+    window.addEventListener('load', handleHash);
+
+    async function submitContact() {
+      const name = document.getElementById('contact-name').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const message = document.getElementById('contact-message').value.trim();
+      const btn = document.getElementById('contact-submit');
+      const status = document.getElementById('form-status');
+
+      if (!name || !email || !message) {
+        status.className = 'form-status error';
+        status.textContent = 'Please fill out all fields.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      status.className = 'form-status';
+      status.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, message })
+        });
+
+        if (res.ok) {
+          status.className = 'form-status success';
+          status.textContent = 'Message sent! We\'ll get back to you soon.';
+          document.getElementById('contact-name').value = '';
+          document.getElementById('contact-email').value = '';
+          document.getElementById('contact-message').value = '';
+        } else {
+          throw new Error('Failed to send');
+        }
+      } catch (err) {
+        status.className = 'form-status error';
+        status.textContent = 'Something went wrong. Please email us directly at info@cven.cc.';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    }
+  </script>
+
 </body>
 </html>
