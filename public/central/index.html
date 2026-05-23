@@ -425,7 +425,7 @@
     align-items: center;
     gap: 8px;
     font-family: var(--condensed);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -446,10 +446,13 @@
   }
 
   .backlog-section-count {
-    font-family: var(--condensed);
+    font-family: var(--sans);
     font-size: 12px;
     font-weight: 500;
     color: var(--text-muted);
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 10px;
   }
 
   .backlog-section-body {
@@ -461,26 +464,14 @@
     display: block;
   }
 
-  .backlog-subgroup + .backlog-subgroup {
-    margin-top: 12px;
-  }
-
-  .backlog-subgroup-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-mid);
-    margin: 0 0 6px;
-    padding-left: 8px;
+  .backlog-flat {
+    padding: 4px 0 8px;
   }
 
   .backlog-items {
     display: flex;
     flex-direction: column;
     gap: 6px;
-  }
-
-  .backlog-subgroup.titled .backlog-items {
-    padding-left: 8px;
   }
 
   .backlog-item {
@@ -491,36 +482,18 @@
     font-weight: 400;
     color: var(--text);
     line-height: 1.4;
+    cursor: pointer;
+    margin: 0;
   }
 
   .backlog-checkbox {
     flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    margin-top: 3px;
-    border: 1.5px solid var(--text-muted);
-    border-radius: 3px;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    line-height: 1;
-  }
-
-  .backlog-item.done .backlog-checkbox {
-    border-color: var(--accent-green);
-    background: var(--accent-green);
-  }
-
-  .backlog-item.done .backlog-checkbox::before {
-    content: '\2713';
-    color: #fff;
-    font-weight: 700;
+    margin: 2px 0 0;
+    cursor: pointer;
   }
 
   .backlog-item.done .backlog-text {
-    color: var(--text-muted);
+    color: #95a5a6;
     text-decoration: line-through;
   }
 
@@ -531,14 +504,13 @@
     font-family: var(--condensed);
     font-size: 11px;
     font-weight: 500;
-    color: var(--text-muted);
-    background: var(--surface-hover);
-    border: 1px solid var(--border-subtle);
-    padding: 1px 6px;
+    color: #fff;
+    padding: 2px 6px;
     border-radius: 4px;
     margin-left: 6px;
     vertical-align: 1px;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .sync-rows {
@@ -946,73 +918,111 @@ function renderLevelA() {
 
 // ─── BACKLOG.md parser (§6.3) ────────────────────────────────────────
 
+function parseBacklogItem(line) {
+  const m = line.match(/^\s*-\s+\[([ xX])\]\s+(.+?)\s*$/);
+  if (!m) return null;
+  const done = m[1].toLowerCase() === 'x';
+
+  let text = m[2];
+  const tags = [];
+  while (true) {
+    const tagMatch = text.match(/^(.+?)\s*\[([^\]]+)\]\s*$/);
+    if (!tagMatch) break;
+    tags.unshift(tagMatch[2].trim());
+    text = tagMatch[1];
+  }
+  return { done, text: text.trim(), tags };
+}
+
 function parseBacklog(content) {
   const lines = content.split('\n');
   const sections = [];
+  const orphanItems = [];
   let currentSection = null;
-  let currentSubgroup = null;
+  let sawSectionHeading = false;
 
   for (const raw of lines) {
-    const line = raw.trim();
-
-    if (line.startsWith('## ')) {
+    const sectionMatch = raw.match(/^##(?!#)\s+(.+?)\s*$/);
+    if (sectionMatch) {
+      sawSectionHeading = true;
       currentSection = {
-        title: line.slice(3).trim(),
-        subgroups: [],
+        title: sectionMatch[1].trim(),
+        items: [],
         doneCount: 0,
         totalCount: 0,
       };
       sections.push(currentSection);
-      currentSubgroup = null;
       continue;
     }
 
-    if (!currentSection) continue;
+    // Ignore ### sub-headings per spec §3.4.5
+    if (/^###/.test(raw)) continue;
 
-    if (line.startsWith('### ')) {
-      currentSubgroup = { title: line.slice(4).trim(), items: [] };
-      currentSection.subgroups.push(currentSubgroup);
-      continue;
+    const item = parseBacklogItem(raw);
+    if (!item) continue;
+
+    if (currentSection) {
+      currentSection.items.push(item);
+      currentSection.totalCount++;
+      if (item.done) currentSection.doneCount++;
+    } else {
+      orphanItems.push(item);
     }
-
-    const task = line.match(/^-\s+(✅|🔲)\s+(.+)$/);
-    if (!task) continue;
-
-    const done = task[1] === '✅';
-    const tags = [];
-    const text = task[2]
-      .replace(/\[([^\]]+)\]/g, (_, t) => { tags.push(t.trim()); return ''; })
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-    if (!currentSubgroup) {
-      currentSubgroup = { title: null, items: [] };
-      currentSection.subgroups.push(currentSubgroup);
-    }
-    currentSubgroup.items.push({ done, text, tags });
-    currentSection.totalCount++;
-    if (done) currentSection.doneCount++;
   }
 
-  return { sections };
+  // No `## ` headings anywhere → flat list (spec §5)
+  if (!sawSectionHeading && orphanItems.length) {
+    return {
+      sections: [],
+      flat: {
+        items: orphanItems,
+        doneCount: orphanItems.filter(i => i.done).length,
+        totalCount: orphanItems.length,
+      },
+    };
+  }
+
+  return { sections, flat: null };
 }
 
 // ─── Level B rendering ───────────────────────────────────────────────
 
+const BACKLOG_TAG_COLORS = {
+  p0: '#e74c3c',
+  p1: '#e67e22',
+  p2: '#3498db',
+  p3: '#95a5a6',
+  ui: '#1abc9c',
+  api: '#9b59b6',
+  data: '#34495e',
+  bug: '#e74c3c',
+};
+const BACKLOG_TAG_DEFAULT = '#bdc3c7';
+
+function renderBacklogTag(tag) {
+  const color = BACKLOG_TAG_COLORS[tag.toLowerCase()] || BACKLOG_TAG_DEFAULT;
+  return el('span', { class: 'backlog-tag', style: `background-color:${color}` }, tag);
+}
+
 function renderBacklogItem(item) {
-  const row = el('div', { class: 'backlog-item' + (item.done ? ' done' : '') });
-  row.append(el('div', { class: 'backlog-checkbox' }));
+  const row = el('label', { class: 'backlog-item' + (item.done ? ' done' : '') });
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.className = 'backlog-checkbox';
+  input.checked = item.done;
+  input.addEventListener('change', () => {
+    row.classList.toggle('done', input.checked);
+  });
+  row.append(input);
   const text = el('div', { class: 'backlog-text' });
   text.append(document.createTextNode(item.text));
-  for (const tag of item.tags) {
-    text.append(el('span', { class: 'backlog-tag' }, tag));
-  }
+  for (const tag of item.tags) text.append(renderBacklogTag(tag));
   row.append(text);
   return row;
 }
 
-function renderBacklogSection(section, expanded) {
-  const sec = el('div', { class: 'backlog-section' + (expanded ? ' expanded' : '') });
+function renderBacklogSection(section) {
+  const sec = el('div', { class: 'backlog-section expanded' });
 
   const header = el('div', { class: 'backlog-section-header' });
   const title = el('div', { class: 'backlog-section-title' });
@@ -1020,22 +1030,25 @@ function renderBacklogSection(section, expanded) {
   title.append(document.createTextNode(section.title));
   header.append(title);
   header.append(el('div', { class: 'backlog-section-count' },
-    `${section.doneCount} of ${section.totalCount}`));
+    `${section.doneCount} / ${section.totalCount}`));
   sec.append(header);
 
   const body = el('div', { class: 'backlog-section-body' });
-  for (const sg of section.subgroups) {
-    const wrap = el('div', { class: 'backlog-subgroup' + (sg.title ? ' titled' : '') });
-    if (sg.title) wrap.append(el('div', { class: 'backlog-subgroup-title' }, sg.title));
-    const items = el('div', { class: 'backlog-items' });
-    for (const item of sg.items) items.append(renderBacklogItem(item));
-    wrap.append(items);
-    body.append(wrap);
-  }
+  const items = el('div', { class: 'backlog-items' });
+  for (const item of section.items) items.append(renderBacklogItem(item));
+  body.append(items);
   sec.append(body);
 
   header.addEventListener('click', () => sec.classList.toggle('expanded'));
   return sec;
+}
+
+function renderBacklogFlat(flat) {
+  const wrap = el('div', { class: 'backlog-flat' });
+  const items = el('div', { class: 'backlog-items' });
+  for (const item of flat.items) items.append(renderBacklogItem(item));
+  wrap.append(items);
+  return wrap;
 }
 
 function renderLevelB() {
@@ -1071,14 +1084,19 @@ function renderLevelB() {
     return;
   }
 
+  if (parsed.flat) {
+    panel.append(renderBacklogFlat(parsed.flat));
+    return;
+  }
+
   if (parsed.sections.length === 0) {
     panel.append(el('div', { class: 'panel-empty' }, 'Backlog is empty.'));
     return;
   }
 
-  parsed.sections.forEach((section, idx) => {
-    panel.append(renderBacklogSection(section, idx === 0));
-  });
+  for (const section of parsed.sections) {
+    panel.append(renderBacklogSection(section));
+  }
 }
 
 // ─── Tools panel (mobile-only, §7.2) ─────────────────────────────────
