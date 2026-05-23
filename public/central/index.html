@@ -1071,7 +1071,7 @@ function renderLevelB() {
     return;
   }
   if (result.error) {
-    panel.append(el('div', { class: 'panel-error' }, 'Failed to load backlog. Try refreshing.'));
+    panel.append(el('div', { class: 'panel-error' }, `Error loading BACKLOG.md: ${result.error}`));
     return;
   }
 
@@ -1172,19 +1172,26 @@ function renderSync() {
 
 // ─── Fetching (§8) ───────────────────────────────────────────────────
 
-async function fetchProjectFile(repo, file, signal) {
+async function fetchProjectFile(repo, file, signal, options = {}) {
   const project = PROJECTS.find(p => p.repo === repo);
   const branch = project?.branch || 'main';
   const url = `/api/project-status?repo=${encodeURIComponent(repo)}&file=${encodeURIComponent(file)}&branch=${encodeURIComponent(branch)}`;
+  const debug = options.debug;
+  if (debug) console.log(`[${debug}] fetch`, { repo, branch, path: file, url });
   try {
     const res = await fetch(url, { signal });
+    if (debug) console.log(`[${debug}] response`, { repo, status: res.status });
     if (res.status === 404) return { notFound: true };
     if (!res.ok) return { error: `HTTP ${res.status}` };
     const data = await res.json();
-    if (!data.ok) return { error: data.error || 'Unknown error' };
+    if (!data.ok) {
+      if (debug) console.log(`[${debug}] api error`, { repo, error: data.error });
+      return { error: data.error || 'Unknown error' };
+    }
     return { content: data.content, fetchedAt: data.fetchedAt };
   } catch (err) {
     if (err.name === 'AbortError' || signal?.aborted) return { aborted: true };
+    if (debug) console.log(`[${debug}] error`, { repo, message: err.message });
     return { error: err.message };
   }
 }
@@ -1194,7 +1201,7 @@ function fetchBuildStatus(repo, signal) {
 }
 
 function fetchBacklog(repo, signal) {
-  return fetchProjectFile(repo, 'docs/status/BACKLOG.md', signal);
+  return fetchProjectFile(repo, 'docs/status/BACKLOG.md', signal, { debug: 'backlog' });
 }
 
 async function fetchSyncStatus() {
