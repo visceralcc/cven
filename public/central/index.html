@@ -474,6 +474,21 @@
     gap: 6px;
   }
 
+  .backlog-subheading {
+    font-family: var(--condensed);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 10px;
+    margin-bottom: 2px;
+  }
+
+  .backlog-items > .backlog-subheading:first-child {
+    margin-top: 0;
+  }
+
   .backlog-item {
     display: flex;
     align-items: flex-start;
@@ -919,11 +934,19 @@ function renderLevelA() {
 // ─── BACKLOG.md parser (§6.3) ────────────────────────────────────────
 
 function parseBacklogItem(line) {
-  const m = line.match(/^\s*-\s+\[([ xX])\]\s+(.+?)\s*$/);
-  if (!m) return null;
-  const done = m[1].toLowerCase() === 'x';
+  let done;
+  let text;
+  const checkbox = line.match(/^\s*-\s+\[([ xX])\]\s+(.+?)\s*$/);
+  if (checkbox) {
+    done = checkbox[1].toLowerCase() === 'x';
+    text = checkbox[2];
+  } else {
+    const emoji = line.match(/^\s*-\s+(✅|🔲)\s+(.+?)\s*$/);
+    if (!emoji) return null;
+    done = emoji[1] === '✅';
+    text = emoji[2];
+  }
 
-  let text = m[2];
   const tags = [];
   while (true) {
     const tagMatch = text.match(/^(.+?)\s*\[([^\]]+)\]\s*$/);
@@ -955,8 +978,13 @@ function parseBacklog(content) {
       continue;
     }
 
-    // Ignore ### sub-headings per spec §3.4.5
-    if (/^###/.test(raw)) continue;
+    const subHeadingMatch = raw.match(/^###\s+(.+?)\s*$/);
+    if (subHeadingMatch) {
+      if (currentSection) {
+        currentSection.items.push({ subheading: true, title: subHeadingMatch[1].trim() });
+      }
+      continue;
+    }
 
     const item = parseBacklogItem(raw);
     if (!item) continue;
@@ -996,6 +1024,9 @@ const BACKLOG_TAG_COLORS = {
   api: '#9b59b6',
   data: '#34495e',
   bug: '#e74c3c',
+  engine: '#27ae60',
+  figma: '#e84393',
+  carry: '#f39c12',
 };
 const BACKLOG_TAG_DEFAULT = '#bdc3c7';
 
@@ -1035,7 +1066,13 @@ function renderBacklogSection(section) {
 
   const body = el('div', { class: 'backlog-section-body' });
   const items = el('div', { class: 'backlog-items' });
-  for (const item of section.items) items.append(renderBacklogItem(item));
+  for (const item of section.items) {
+    if (item.subheading) {
+      items.append(el('div', { class: 'backlog-subheading' }, item.title));
+    } else {
+      items.append(renderBacklogItem(item));
+    }
+  }
   body.append(items);
   sec.append(body);
 
