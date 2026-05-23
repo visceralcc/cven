@@ -325,40 +325,86 @@
   .status-table td.status-cell.status-complete { color: var(--accent-green); }
   .status-table td.status-cell.status-pending { color: var(--text-muted); }
 
-  .sprint-heading {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-
-  .sprint-body p {
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--text-mid);
-    line-height: 1.5;
-    margin-bottom: 8px;
-  }
-
-  .sprint-body ul {
+  .next-steps-list {
     list-style: none;
     padding-left: 0;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
-  .sprint-body li {
+  .next-steps-list li {
     font-size: 14px;
-    color: var(--text-mid);
-    line-height: 1.6;
+    color: var(--text);
+    line-height: 1.5;
     padding-left: 18px;
     position: relative;
+    margin-bottom: 6px;
   }
 
-  .sprint-body li::before {
+  .next-steps-list li::before {
     content: '•';
     position: absolute;
     left: 4px;
     color: var(--text-muted);
+  }
+
+  .next-steps-empty {
+    margin-bottom: 4px;
+  }
+
+  .next-steps-empty code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    background: var(--surface-hover);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text-mid);
+  }
+
+  .build-progress {
+    margin-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .build-progress-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .build-progress-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--condensed);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .build-progress-chevron {
+    width: 0;
+    height: 0;
+    border-left: 5px solid var(--text-muted);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform 0.15s;
+  }
+
+  .build-progress.expanded .build-progress-chevron {
+    transform: rotate(90deg);
+  }
+
+  .build-progress-body {
+    display: none;
+    padding: 4px 0 8px;
+  }
+
+  .build-progress.expanded .build-progress-body {
+    display: block;
   }
 
   .backlog-section + .backlog-section {
@@ -708,55 +754,67 @@ document.getElementById('sidebar').addEventListener('click', (e) => {
 
 // ─── BUILD_STATUS.md parser (§6.2) ───────────────────────────────────
 
+function stripInlineMarkdown(s) {
+  return s
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1$2')
+    .replace(/(^|[^_])_([^_\n]+)_/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}
+
 function parseBuildStatus(content) {
   const updatedMatch = content.match(/last updated[:\s]*(\d{4}-\d{2}-\d{2})/i);
   const lastUpdated = updatedMatch ? updatedMatch[1] : null;
 
   const lines = content.split('\n');
 
+  // ── Next Steps section ────────────────────────────────────────────
+  // null  = heading not found
+  // []    = heading found but no bullet items
+  // [...] = bullet items
+  let nextSteps = null;
+  for (let i = 0; i < lines.length; i++) {
+    const heading = lines[i].match(/^##\s+(.+?)\s*$/);
+    if (!heading) continue;
+    if (!/^next steps$/i.test(heading[1].trim())) continue;
+    nextSteps = [];
+    for (let j = i + 1; j < lines.length; j++) {
+      if (/^##\s/.test(lines[j])) break;
+      const bullet = lines[j].match(/^\s*[-*]\s+(.+)$/);
+      if (bullet) nextSteps.push(stripInlineMarkdown(bullet[1]));
+    }
+    break;
+  }
+
+  // ── Markdown table (headers + rows) ───────────────────────────────
   const tableRows = [];
-  let tableEndIdx = -1;
   let inTable = false;
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     const isRow = trimmed.startsWith('|') && trimmed.endsWith('|');
     if (!inTable && isRow) inTable = true;
     if (inTable) {
-      if (isRow) {
-        tableRows.push(trimmed);
-        tableEndIdx = i;
-      } else {
-        break;
-      }
+      if (isRow) tableRows.push(trimmed);
+      else break;
     }
   }
 
-  const table = [];
+  let table = null;
   if (tableRows.length >= 3) {
+    const parseRow = (row) => row.split('|').slice(1, -1).map(c => c.trim());
+    const headers = parseRow(tableRows[0]);
+    const rows = [];
     for (let r = 2; r < tableRows.length; r++) {
-      const cells = tableRows[r].split('|').slice(1, -1).map(c => c.trim());
-      if (cells.length >= 2) table.push({ system: cells[0], status: cells[1] });
+      const cells = parseRow(tableRows[r]);
+      if (cells.length) rows.push(cells);
     }
+    if (headers.length && rows.length) table = { headers, rows };
   }
 
-  let sprint = null;
-  const sprintRe = /sprint|\d{2}\.\d{2}\.\d{2}/i;
-  const startSearch = tableEndIdx >= 0 ? tableEndIdx + 1 : 0;
-  for (let i = startSearch; i < lines.length; i++) {
-    if (lines[i].startsWith('## ')) {
-      const heading = lines[i].slice(3).trim();
-      if (!sprintRe.test(heading)) continue;
-      const body = [];
-      for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].startsWith('## ')) break;
-        body.push(lines[j]);
-      }
-      sprint = { heading, body: body.join('\n').trim() };
-      break;
-    }
-  }
-
-  return { lastUpdated, table, sprint };
+  return { lastUpdated, nextSteps, table };
 }
 
 // ─── Level A rendering ───────────────────────────────────────────────
@@ -776,63 +834,57 @@ function statusCellClass(status) {
   return 'status-cell';
 }
 
-function renderStatusTable(rows) {
+function renderStatusTable(table) {
   const wrap = el('div', { class: 'status-table-wrap' });
-  const table = el('table', { class: 'status-table' });
+  const tbl = el('table', { class: 'status-table' });
   const thead = el('thead');
-  thead.append(el('tr', {},
-    el('th', {}, 'System'),
-    el('th', { class: 'status-col' }, 'Status'),
-  ));
-  table.append(thead);
+  const headerRow = el('tr');
+  table.headers.forEach((h, idx) => {
+    const isLast = idx === table.headers.length - 1 && table.headers.length > 1;
+    headerRow.append(el('th', isLast ? { class: 'status-col' } : {}, h));
+  });
+  thead.append(headerRow);
+  tbl.append(thead);
+
   const tbody = el('tbody');
-  for (const row of rows) {
-    tbody.append(el('tr', {},
-      el('td', {}, row.system),
-      el('td', { class: statusCellClass(row.status) }, row.status),
-    ));
+  for (const cells of table.rows) {
+    const tr = el('tr');
+    cells.forEach((cell, idx) => {
+      const isLast = idx === table.headers.length - 1 && table.headers.length > 1;
+      const cls = isLast ? statusCellClass(cell) : null;
+      tr.append(el('td', cls ? { class: cls } : {}, cell));
+    });
+    tbody.append(tr);
   }
-  table.append(tbody);
-  wrap.append(table);
+  tbl.append(tbody);
+  wrap.append(tbl);
   return wrap;
 }
 
-function renderSprintBody(text) {
-  const body = el('div', { class: 'sprint-body' });
-  const lines = text.split('\n');
-  let para = [];
-  let bullets = [];
+function renderBuildProgress(table) {
+  const sec = el('div', { class: 'build-progress' });
+  const header = el('div', { class: 'build-progress-header' });
+  const title = el('div', { class: 'build-progress-title' });
+  title.append(el('span', { class: 'build-progress-chevron' }));
+  title.append(document.createTextNode('Build Progress'));
+  header.append(title);
+  sec.append(header);
 
-  const flushPara = () => {
-    if (para.length) body.append(el('p', {}, para.join(' ')));
-    para = [];
-  };
-  const flushBullets = () => {
-    if (bullets.length) {
-      const ul = el('ul');
-      for (const item of bullets) ul.append(el('li', {}, item));
-      body.append(ul);
-    }
-    bullets = [];
-  };
+  const body = el('div', { class: 'build-progress-body' });
+  body.append(renderStatusTable(table));
+  sec.append(body);
 
-  for (const raw of lines) {
-    const line = raw.trim();
-    const bullet = line.match(/^[-*]\s+(.*)/);
-    if (bullet) {
-      flushPara();
-      bullets.push(bullet[1]);
-    } else if (line === '') {
-      flushPara();
-      flushBullets();
-    } else {
-      flushBullets();
-      para.push(line);
-    }
-  }
-  flushPara();
-  flushBullets();
-  return body;
+  header.addEventListener('click', () => sec.classList.toggle('expanded'));
+  return sec;
+}
+
+function renderNextStepsEmpty(message, codeText) {
+  const wrap = el('div', { class: 'panel-empty next-steps-empty' });
+  const parts = message.split('{code}');
+  wrap.append(document.createTextNode(parts[0]));
+  wrap.append(el('code', {}, codeText));
+  if (parts[1]) wrap.append(document.createTextNode(parts[1]));
+  return wrap;
 }
 
 function renderLevelA() {
@@ -847,11 +899,10 @@ function renderLevelA() {
     return;
   }
   if (result.notFound) {
-    const empty = el('div', { class: 'panel-empty' });
-    empty.append(document.createTextNode('No BUILD_STATUS.md found. Create one at '));
-    empty.append(el('code', {}, 'docs/status/BUILD_STATUS.md'));
-    empty.append(document.createTextNode(' to surface status here.'));
-    panel.append(empty);
+    panel.append(renderNextStepsEmpty(
+      'No BUILD_STATUS.md found. Create one at {code} to surface status here.',
+      'docs/status/BUILD_STATUS.md',
+    ));
     return;
   }
   if (result.error) {
@@ -871,12 +922,25 @@ function renderLevelA() {
   if (parsed.lastUpdated) {
     panel.append(el('div', { class: 'panel-meta' }, `Last updated ${formatUpdatedDate(parsed.lastUpdated)}`));
   }
-  if (parsed.table.length) {
-    panel.append(renderStatusTable(parsed.table));
+
+  if (parsed.nextSteps === null) {
+    panel.append(renderNextStepsEmpty(
+      'No next steps defined. Add a {code} section to BUILD_STATUS.md to surface them here.',
+      '## Next Steps',
+    ));
+  } else if (parsed.nextSteps.length === 0) {
+    panel.append(renderNextStepsEmpty(
+      'Next steps section is empty — add bullet points below {code} in BUILD_STATUS.md.',
+      '## Next Steps',
+    ));
+  } else {
+    const ul = el('ul', { class: 'next-steps-list' });
+    for (const item of parsed.nextSteps) ul.append(el('li', {}, item));
+    panel.append(ul);
   }
-  if (parsed.sprint) {
-    panel.append(el('div', { class: 'sprint-heading' }, parsed.sprint.heading));
-    panel.append(renderSprintBody(parsed.sprint.body));
+
+  if (parsed.table) {
+    panel.append(renderBuildProgress(parsed.table));
   }
 }
 
