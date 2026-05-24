@@ -70,6 +70,27 @@
     border-radius: 4px;
   }
 
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .topbar-sync {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .topbar-sync-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-mid);
+  }
+
   .refresh-btn {
     padding: 8px 14px;
     background: var(--surface);
@@ -407,6 +428,37 @@
     display: block;
   }
 
+  .backlog-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .backlog-tab {
+    font-family: var(--condensed);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+
+  .backlog-tab:hover {
+    color: var(--text-mid);
+  }
+
+  .backlog-tab.active {
+    color: var(--text);
+    background: var(--bg);
+    border-color: var(--border-subtle);
+  }
+
   .backlog-section + .backlog-section {
     border-top: 1px solid var(--border-subtle);
   }
@@ -528,34 +580,6 @@
     text-transform: uppercase;
   }
 
-  .sync-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .sync-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .sync-machine {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--text-muted);
-  }
-
-  .sync-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-mid);
-  }
-
   .sync-dot {
     width: 8px;
     height: 8px;
@@ -584,6 +608,9 @@
 
   @media (max-width: 768px) {
     .page { padding: 24px 16px 60px; }
+
+    .topbar-right { gap: 10px; }
+    .topbar-sync { display: none; }
 
     .grid {
       grid-template-columns: 1fr;
@@ -623,7 +650,10 @@
       <h1>Command Center</h1>
       <span class="tag">internal</span>
     </div>
-    <button class="refresh-btn" id="refreshBtn">Refresh All</button>
+    <div class="topbar-right">
+      <div class="topbar-sync" id="topbarSync"></div>
+      <button class="refresh-btn" id="refreshBtn">Refresh All</button>
+    </div>
   </div>
 
   <div class="grid">
@@ -632,7 +662,6 @@
     <section class="main">
       <div class="panel" id="panelStatus"></div>
       <div class="panel tools-panel" id="panelTools"></div>
-      <div class="panel" id="panelSync"></div>
       <div class="panel" id="panelBacklog"></div>
     </section>
   </div>
@@ -667,6 +696,7 @@ const PROJECTS = [
 let selectedRepo = PROJECTS[0].repo;
 const cache = {};
 let syncCache = null;
+let backlogTab = 'outstanding';
 let currentLoadController = new AbortController();
 
 const MACHINES = [
@@ -877,7 +907,7 @@ function renderNextStepsEmpty(message, codeText) {
 function renderLevelA() {
   const panel = document.getElementById('panelStatus');
   panel.innerHTML = '';
-  panel.append(el('div', { class: 'panel-header' }, 'Status'));
+  panel.append(el('div', { class: 'panel-header' }, 'Next Steps'));
 
   const result = cache[selectedRepo]?.buildStatus;
 
@@ -1088,6 +1118,49 @@ function renderBacklogFlat(flat) {
   return wrap;
 }
 
+function collectBacklogItems(parsed) {
+  const all = [];
+  if (parsed.flat) {
+    for (const it of parsed.flat.items) all.push(it);
+  } else {
+    for (const section of parsed.sections) {
+      for (const it of section.items) {
+        if (!it.subheading) all.push(it);
+      }
+    }
+  }
+  return all;
+}
+
+function renderBacklogTabs(totalOutstanding, totalAll) {
+  const tabs = el('div', { class: 'backlog-tabs' });
+  const mkTab = (key, label) => {
+    const btn = el('button',
+      { class: 'backlog-tab' + (backlogTab === key ? ' active' : ''), type: 'button' },
+      label);
+    btn.addEventListener('click', () => {
+      if (backlogTab === key) return;
+      backlogTab = key;
+      renderLevelB();
+    });
+    return btn;
+  };
+  tabs.append(mkTab('outstanding', `Outstanding (${totalOutstanding})`));
+  tabs.append(mkTab('all', `All (${totalAll})`));
+  return tabs;
+}
+
+function renderBacklogOutstanding(items) {
+  if (items.length === 0) {
+    return el('div', { class: 'panel-empty' }, 'Nothing outstanding — everything is checked.');
+  }
+  const wrap = el('div', { class: 'backlog-flat' });
+  const list = el('div', { class: 'backlog-items' });
+  for (const item of items) list.append(renderBacklogItem(item));
+  wrap.append(list);
+  return wrap;
+}
+
 function renderLevelB() {
   const panel = document.getElementById('panelBacklog');
   panel.innerHTML = '';
@@ -1121,13 +1194,24 @@ function renderLevelB() {
     return;
   }
 
-  if (parsed.flat) {
-    panel.append(renderBacklogFlat(parsed.flat));
+  const allItems = collectBacklogItems(parsed);
+  const outstanding = allItems.filter(i => !i.done);
+
+  if (allItems.length === 0) {
+    panel.append(el('div', { class: 'panel-empty' }, 'Backlog is empty.'));
     return;
   }
 
-  if (parsed.sections.length === 0) {
-    panel.append(el('div', { class: 'panel-empty' }, 'Backlog is empty.'));
+  panel.append(renderBacklogTabs(outstanding.length, allItems.length));
+
+  if (backlogTab === 'outstanding') {
+    panel.append(renderBacklogOutstanding(outstanding));
+    return;
+  }
+
+  // 'all' tab — existing collapsible-sections view (unchanged)
+  if (parsed.flat) {
+    panel.append(renderBacklogFlat(parsed.flat));
     return;
   }
 
@@ -1161,7 +1245,7 @@ function renderTools() {
   panel.append(list);
 }
 
-// ─── Sync panel (§4.2) ───────────────────────────────────────────────
+// ─── Sync (topbar inline) ────────────────────────────────────────────
 
 function getMachineStatus(m) {
   if (!m) return { dotClass: 'absent', label: 'Not cloned' };
@@ -1173,38 +1257,24 @@ function getMachineStatus(m) {
 }
 
 function renderSync() {
-  const panel = document.getElementById('panelSync');
-  panel.innerHTML = '';
-  panel.append(el('div', { class: 'panel-header' }, 'Sync'));
+  const wrap = document.getElementById('topbarSync');
+  if (!wrap) return;
+  wrap.innerHTML = '';
 
-  if (!syncCache) {
-    panel.append(el('div', { class: 'panel-loading' }, 'Loading…'));
-    return;
-  }
-  if (syncCache.error) {
-    panel.append(el('div', { class: 'panel-error' }, 'Sync status unavailable.'));
-    return;
-  }
+  // Silent when loading or on error — nothing in the topbar.
+  if (!syncCache || syncCache.error) return;
 
   const repoEntry = (syncCache.repos || []).find(r => r.name === selectedRepo);
-  if (!repoEntry) {
-    panel.append(el('div', { class: 'panel-empty' }, 'No sync data for this repo'));
-    return;
-  }
+  if (!repoEntry) return;
 
-  const rows = el('div', { class: 'sync-rows' });
   for (const { key, label } of MACHINES) {
     const machineData = repoEntry.machines?.[key];
     const { dotClass, label: statusLabel } = getMachineStatus(machineData);
-    const row = el('div', { class: 'sync-row' });
-    row.append(el('span', { class: 'sync-machine' }, label));
-    const status = el('div', { class: 'sync-status' });
-    status.append(el('span', { class: `sync-dot ${dotClass}` }));
-    status.append(document.createTextNode(statusLabel));
-    row.append(status);
-    rows.append(row);
+    const item = el('div', { class: 'topbar-sync-item', title: label });
+    item.append(el('span', { class: `sync-dot ${dotClass}` }));
+    item.append(document.createTextNode(statusLabel));
+    wrap.append(item);
   }
-  panel.append(rows);
 }
 
 // ─── Fetching (§8) ───────────────────────────────────────────────────
