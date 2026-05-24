@@ -18,6 +18,10 @@ export default {
       return handleProjectStatus(request, env);
     }
 
+    if (url.pathname === '/api/project-update') {
+      return handleProjectUpdate(request, env);
+    }
+
     if (url.pathname === '/api/contact') {
       return handleContact(request, env);
     }
@@ -307,5 +311,213 @@ async function handleProjectStatus(request, env) {
     }, { headers: CORS });
   } catch (err) {
     return Response.json({ ok: false, error: `Fetch failed: ${err.message}` }, { status: 500, headers: CORS });
+  }
+}
+
+// ─── Project Update (markdown append) ────────────────────────────────
+
+function base64EncodeUtf8(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+function base64DecodeUtf8(b64) {
+  const bin = atob(String(b64).replace(/\s/g, ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+// Returns the new content string with `itemLine` appended into the right place.
+function appendBacklogItem(content, section, subsection, itemLine) {
+  const eol = content.includes('\r\n') ? '\r\n' : '\n';
+  const lines = content.split(/\r?\n/);
+
+  const isH2 = (l) => /^##\s+(.+?)\s*$/.test(l) && !/^###/.test(l);
+  const isH3 = (l) => /^###\s+(.+?)\s*$/.test(l);
+  const h2Title = (l) => l.match(/^##\s+(.+?)\s*$/)?.[1].trim();
+  const h3Title = (l) => l.match(/^###\s+(.+?)\s*$/)?.[1].trim();
+  const isBulletItem = (l) => /^\s*-\s+/.test(l);
+
+  const targetSection = section.trim();
+  const targetSub = subsection ? subsection.trim() : '';
+  const sectionCi = targetSection.toLowerCase();
+  const subCi = targetSub.toLowerCase();
+
+  // Find the section.
+  let sectionStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (isH2(lines[i]) && h2Title(lines[i]).toLowerCase() === sectionCi) {
+      sectionStart = i;
+      break;
+    }
+  }
+
+  // Section doesn't exist — append a new section at the end.
+  if (sectionStart === -1) {
+    const out = [...lines];
+    // Trim trailing blank lines so we don't pile them up.
+    while (out.length && out[out.length - 1].trim() === '') out.pop();
+    out.push('');
+    out.push(`## ${targetSection}`);
+    out.push('');
+    if (targetSub) {
+      out.push(`### ${targetSub}`);
+      out.push('');
+    }
+    out.push(itemLine);
+    out.push('');
+    return out.join(eol);
+  }
+
+  // Determine the range [scanStart, scanEnd) within the section (or subsection).
+  let scanStart = sectionStart + 1;
+  let scanEnd = lines.length;
+  for (let i = sectionStart + 1; i < lines.length; i++) {
+    if (isH2(lines[i])) { scanEnd = i; break; }
+  }
+
+  if (targetSub) {
+    let subStart = -1;
+    for (let i = scanStart; i < scanEnd; i++) {
+      if (isH3(lines[i]) && h3Title(lines[i]).toLowerCase() === subCi) {
+        subStart = i;
+        break;
+      }
+    }
+    if (subStart === -1) {
+      // Subsection doesn't exist within the section — append at end of section.
+      const subEnd = scanEnd;
+      const out = lines.slice(0, subEnd);
+      while (out.length > scanStart && out[out.length - 1].trim() === '') out.pop();
+      out.push('');
+      out.push(`### ${targetSub}`);
+      out.push('');
+      out.push(itemLine);
+      out.push('');
+      return out.concat(lines.slice(subEnd)).join(eol);
+    }
+    scanStart = subStart + 1;
+    let subEnd = scanEnd;
+    for (let i = subStart + 1; i < scanEnd; i++) {
+      if (isH3(lines[i]) || isH2(lines[i])) { subEnd = i; break; }
+    }
+    scanEnd = subEnd;
+  }
+
+  // Find the last bullet item in [scanStart, scanEnd).
+  let lastItem = -1;
+  for (let i = scanStart; i < scanEnd; i++) {
+    if (isBulletItem(lines[i])) lastItem = i;
+  }
+
+  const insertAt = lastItem !== -1 ? lastItem + 1 : scanEnd;
+  const out = [...lines.slice(0, insertAt), itemLine, ...lines.slice(insertAt)];
+  return out.join(eol);
+}
+
+async function handleProjectUpdate(request, env) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS });
+  }
+
+  if (request.method !== 'POST') {
+    return Response.json({ ok: false, error: 'Method not allowed' }, { status: 405, headers: CORS });
+  }
+
+  if (!env.GITHUB_TOKEN) {
+    return Response.json({ ok: false, error: 'GitHub token not configured' }, { status: 401, headers: CORS });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: 'Invalid JSON body' }, { status: 400, headers: CORS });
+  }
+
+  const { repo, file, branch, section, subsection, item, commitMessage } = body || {};
+
+  if (!repo) return Response.json({ ok: false, error: 'Missing required field: repo' }, { status: 400, headers: CORS });
+  if (!file) return Response.json({ ok: false, error: 'Missing required field: file' }, { status: 400, headers: CORS });
+  if (!section) return Response.json({ ok: false, error: 'Missing required field: section' }, { status: 400, headers: CORS });
+  if (!item) return Response.json({ ok: false, error: 'Missing required field: item' }, { status: 400, headers: CORS });
+
+  if (!/^[a-zA-Z0-9._-]+$/.test(repo)) {
+    return Response.json({ ok: false, error: 'Invalid repo format' }, { status: 400, headers: CORS });
+  }
+  if (!ALLOWED_REPOS.includes(repo)) {
+    return Response.json({ ok: false, error: 'Unknown repo' }, { status: 400, headers: CORS });
+  }
+  if (file.startsWith('/') || file.includes('..') || !file.endsWith('.md')) {
+    return Response.json({ ok: false, error: 'Invalid file path' }, { status: 400, headers: CORS });
+  }
+
+  const targetBranch = branch || 'main';
+  const itemLine = String(item).replace(/\r?\n.*$/s, '').trim();
+  if (!itemLine) {
+    return Response.json({ ok: false, error: 'Item line is empty' }, { status: 400, headers: CORS });
+  }
+
+  const ghBase = `https://api.github.com/repos/visceralcc/${repo}/contents/${file}`;
+  const ghHeaders = {
+    'Authorization': `token ${env.GITHUB_TOKEN}`,
+    'User-Agent': 'cven-worker',
+    'Accept': 'application/vnd.github+json',
+  };
+
+  try {
+    // 1. Read current file (need content + sha).
+    const getRes = await fetch(`${ghBase}?ref=${encodeURIComponent(targetBranch)}`, { headers: ghHeaders });
+    if (!getRes.ok) {
+      const text = await getRes.text();
+      console.error('[project-update] GET failed', getRes.status, text);
+      return Response.json({ ok: false, error: `GitHub GET ${getRes.status}` }, { status: 502, headers: CORS });
+    }
+    const fileData = await getRes.json();
+    if (!fileData.sha || typeof fileData.content !== 'string') {
+      console.error('[project-update] unexpected GET shape', fileData);
+      return Response.json({ ok: false, error: 'Unexpected file metadata from GitHub' }, { status: 502, headers: CORS });
+    }
+
+    const original = base64DecodeUtf8(fileData.content);
+    const updated = appendBacklogItem(original, section, subsection || '', itemLine);
+
+    if (updated === original) {
+      return Response.json({ ok: false, error: 'No change applied' }, { status: 500, headers: CORS });
+    }
+
+    // 2. PUT new content.
+    const message = commitMessage || `backlog: add item to ${section}`;
+    const putRes = await fetch(ghBase, {
+      method: 'PUT',
+      headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        content: base64EncodeUtf8(updated),
+        sha: fileData.sha,
+        branch: targetBranch,
+      }),
+    });
+
+    if (!putRes.ok) {
+      const text = await putRes.text();
+      console.error('[project-update] PUT failed', putRes.status, text);
+      return Response.json({ ok: false, error: `GitHub PUT ${putRes.status}` }, { status: 502, headers: CORS });
+    }
+
+    const putData = await putRes.json();
+    return Response.json({
+      ok: true,
+      repo,
+      file,
+      branch: targetBranch,
+      commit: putData.commit?.sha || null,
+    }, { headers: CORS });
+  } catch (err) {
+    console.error('[project-update] error', err);
+    return Response.json({ ok: false, error: err.message }, { status: 500, headers: CORS });
   }
 }
