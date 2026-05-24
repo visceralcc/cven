@@ -441,6 +441,12 @@
     gap: 6px;
   }
 
+  .backlog-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .backlog-add-btn {
     font-family: var(--sans);
     font-size: 13px;
@@ -458,6 +464,39 @@
   .backlog-add-btn:hover {
     border-color: var(--text-muted);
     color: var(--text);
+  }
+
+  .backlog-save-btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border: 1px solid var(--accent-green);
+    background: var(--accent-green);
+    color: #fff;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .backlog-save-btn:hover:not(.saving):not(.saved) {
+    opacity: 0.88;
+  }
+
+  .backlog-save-btn.hidden {
+    display: none;
+  }
+
+  .backlog-save-btn.saving {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .backlog-save-btn.saved {
+    background: var(--text);
+    border-color: var(--text);
+    pointer-events: none;
   }
 
   .modal-overlay {
@@ -871,7 +910,31 @@ let selectedRepo = PROJECTS[0].repo;
 const cache = {};
 let syncCache = null;
 let backlogTab = 'outstanding';
+const pendingChanges = {}; // repo → Map<lineIndex, newDoneState>
 let currentLoadController = new AbortController();
+
+function getPendingMap(repo) {
+  if (!pendingChanges[repo]) pendingChanges[repo] = new Map();
+  return pendingChanges[repo];
+}
+
+function pendingCount(repo) {
+  return pendingChanges[repo]?.size || 0;
+}
+
+function clearPending(repo) {
+  pendingChanges[repo] = new Map();
+}
+
+function confirmDiscardPending(actionLabel) {
+  const count = pendingCount(selectedRepo);
+  if (count === 0) return true;
+  const ok = confirm(
+    `You have ${count} unsaved checkbox change${count > 1 ? 's' : ''}. Discard and ${actionLabel}?`
+  );
+  if (ok) clearPending(selectedRepo);
+  return ok;
+}
 
 const MACHINES = [
   { key: 'macbook-pro', label: 'MacBook Pro' },
@@ -927,6 +990,7 @@ function renderSidebar() {
 
 function selectProject(repo) {
   if (repo === selectedRepo) return;
+  if (!confirmDiscardPending('switch project')) return;
   currentLoadController.abort();
   currentLoadController = new AbortController();
   selectedRepo = repo;
@@ -1168,7 +1232,8 @@ function parseBacklog(content) {
   let currentSection = null;
   let sawSectionHeading = false;
 
-  for (const raw of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
     const sectionMatch = raw.match(/^##(?!#)\s+(.+?)\s*$/);
     if (sectionMatch) {
       sawSectionHeading = true;
@@ -1192,6 +1257,7 @@ function parseBacklog(content) {
 
     const item = parseBacklogItem(raw);
     if (!item) continue;
+    item.lineIndex = i;
 
     if (currentSection) {
       currentSection.items.push(item);
@@ -1240,13 +1306,28 @@ function renderBacklogTag(tag) {
 }
 
 function renderBacklogItem(item) {
-  const row = el('label', { class: 'backlog-item' + (item.done ? ' done' : '') });
+  const repo = selectedRepo;
+  const pending = pendingChanges[repo];
+  const displayedDone = pending?.has(item.lineIndex)
+    ? pending.get(item.lineIndex)
+    : item.done;
+
+  const row = el('label', { class: 'backlog-item' + (displayedDone ? ' done' : '') });
   const input = document.createElement('input');
   input.type = 'checkbox';
   input.className = 'backlog-checkbox';
-  input.checked = item.done;
+  input.checked = displayedDone;
   input.addEventListener('change', () => {
-    row.classList.toggle('done', input.checked);
+    const newDone = input.checked;
+    row.classList.toggle('done', newDone);
+    if (item.lineIndex == null) return; // can't track changes without a line index
+    const map = getPendingMap(repo);
+    if (newDone === item.done) {
+      map.delete(item.lineIndex);
+    } else {
+      map.set(item.lineIndex, newDone);
+    }
+    updateSaveButton();
   });
   row.append(input);
   const text = el('div', { class: 'backlog-text' });
@@ -1377,10 +1458,18 @@ function renderLevelB() {
   } else {
     headerRow.append(el('div'));
   }
+  const actions = el('div', { class: 'backlog-actions' });
+  const saveBtn = el('button',
+    { class: 'backlog-save-btn', type: 'button', id: 'backlogSaveBtn' },
+    'Save');
+  saveBtn.addEventListener('click', saveBacklogChanges);
+  actions.append(saveBtn);
   const addBtn = el('button', { class: 'backlog-add-btn', type: 'button' }, '+ Add Item');
   addBtn.addEventListener('click', () => openAddItemModal(parsed));
-  headerRow.append(addBtn);
+  actions.append(addBtn);
+  headerRow.append(actions);
   panel.append(headerRow);
+  updateSaveButton();
 
   if (allItems.length === 0) {
     panel.append(el('div', { class: 'panel-empty' }, 'Backlog is empty.'));
@@ -1403,6 +1492,112 @@ function renderLevelB() {
   }
 }
 
+// ─── Save (checkbox state) ───────────────────────────────────────────
+
+function updateSaveButton() {
+  const btn = document.getElementById('backlogSaveBtn');
+  if (!btn) return;
+  if (btn.classList.contains('saving') || btn.classList.contains('saved')) return;
+  const count = pendingCount(selectedRepo);
+  if (count === 0) {
+    btn.classList.add('hidden');
+    btn.textContent = 'Save';
+  } else {
+    btn.classList.remove('hidden');
+    btn.textContent = `Save (${count})`;
+  }
+}
+
+function applyPendingToContent(rawContent, pendingMap) {
+  const eol = rawContent.includes('\r\n') ? '\r\n' : '\n';
+  const lines = rawContent.split(/\r?\n/);
+  for (const [lineIndex, newDone] of pendingMap) {
+    const line = lines[lineIndex];
+    if (line == null) continue;
+    if (newDone) {
+      lines[lineIndex] = line
+        .replace(/^(\s*-\s+)🔲(\s)/, '$1✅$2')
+        .replace(/^(\s*-\s+)\[ \](\s)/, '$1[x]$2');
+    } else {
+      lines[lineIndex] = line
+        .replace(/^(\s*-\s+)✅(\s)/, '$1🔲$2')
+        .replace(/^(\s*-\s+)\[[xX]\](\s)/, '$1[ ]$2');
+    }
+  }
+  return lines.join(eol);
+}
+
+async function saveBacklogChanges() {
+  const repo = selectedRepo;
+  const map = pendingChanges[repo];
+  if (!map || map.size === 0) return;
+  const result = cache[repo]?.backlog;
+  if (!result?.content) return;
+  const project = PROJECTS.find(p => p.repo === repo);
+  if (!project) return;
+
+  const updated = applyPendingToContent(result.content, map);
+  if (updated === result.content) {
+    // Nothing actually changed in the text — clear and bail.
+    clearPending(repo);
+    updateSaveButton();
+    return;
+  }
+
+  const btn = document.getElementById('backlogSaveBtn');
+  if (btn) {
+    btn.classList.add('saving');
+    btn.classList.remove('saved');
+    btn.textContent = 'Saving…';
+  }
+
+  try {
+    const res = await fetch('/api/project-file', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repo,
+        file: 'docs/status/BACKLOG.md',
+        branch: project.branch || 'main',
+        content: updated,
+        commitMessage: 'backlog: update checkbox states',
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      if (btn) {
+        btn.classList.remove('saving');
+        btn.textContent = `Save (${map.size})`;
+      }
+      alert(`Save failed: ${data.error || res.status}`);
+      return;
+    }
+
+    clearPending(repo);
+
+    if (btn) {
+      btn.classList.remove('saving');
+      btn.classList.add('saved');
+      btn.textContent = 'Saved';
+    }
+
+    // Re-fetch so future toggles map to fresh line indices.
+    delete cache[repo].backlog;
+    const refreshed = await fetchBacklog(repo);
+    if (refreshed.aborted) return;
+    storeBacklog(repo, refreshed);
+    if (repo === selectedRepo) {
+      setTimeout(() => renderLevelB(), 700);
+    }
+  } catch (err) {
+    if (btn) {
+      btn.classList.remove('saving');
+      btn.textContent = `Save (${map.size})`;
+    }
+    alert(`Save error: ${err.message}`);
+  }
+}
+
 // ─── Add Item modal ──────────────────────────────────────────────────
 
 const COMMON_TAGS = ['bug', 'figma', 'engine', 'carry'];
@@ -1410,6 +1605,7 @@ const COMMON_TAGS = ['bug', 'figma', 'engine', 'carry'];
 function openAddItemModal(parsed) {
   const project = PROJECTS.find(p => p.repo === selectedRepo);
   if (!project) return;
+  if (!confirmDiscardPending('add a new item')) return;
 
   const sections = parsed?.sections || [];
   const selectedTags = new Set();
@@ -1762,6 +1958,7 @@ async function loadProject(repo, signal) {
 }
 
 async function refreshAll() {
+  if (!confirmDiscardPending('refresh')) return;
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
   currentLoadController.abort();
