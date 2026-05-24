@@ -22,6 +22,10 @@ export default {
       return handleProjectUpdate(request, env);
     }
 
+    if (url.pathname === '/api/project-file') {
+      return handleProjectFile(request, env);
+    }
+
     if (url.pathname === '/api/contact') {
       return handleContact(request, env);
     }
@@ -71,7 +75,7 @@ async function handleContact(request, env) {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -518,6 +522,102 @@ async function handleProjectUpdate(request, env) {
     }, { headers: CORS });
   } catch (err) {
     console.error('[project-update] error', err);
+    return Response.json({ ok: false, error: err.message }, { status: 500, headers: CORS });
+  }
+}
+
+// ─── Project File (full file write) ──────────────────────────────────
+
+async function handleProjectFile(request, env) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS });
+  }
+
+  if (request.method !== 'PUT') {
+    return Response.json({ ok: false, error: 'Method not allowed' }, { status: 405, headers: CORS });
+  }
+
+  if (!env.GITHUB_TOKEN) {
+    return Response.json({ ok: false, error: 'GitHub token not configured' }, { status: 401, headers: CORS });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: 'Invalid JSON body' }, { status: 400, headers: CORS });
+  }
+
+  const { repo, file, branch, content, commitMessage } = body || {};
+
+  if (!repo) return Response.json({ ok: false, error: 'Missing required field: repo' }, { status: 400, headers: CORS });
+  if (!file) return Response.json({ ok: false, error: 'Missing required field: file' }, { status: 400, headers: CORS });
+  if (typeof content !== 'string') {
+    return Response.json({ ok: false, error: 'Missing required field: content' }, { status: 400, headers: CORS });
+  }
+
+  if (!/^[a-zA-Z0-9._-]+$/.test(repo)) {
+    return Response.json({ ok: false, error: 'Invalid repo format' }, { status: 400, headers: CORS });
+  }
+  if (!ALLOWED_REPOS.includes(repo)) {
+    return Response.json({ ok: false, error: 'Unknown repo' }, { status: 400, headers: CORS });
+  }
+  if (file.startsWith('/') || file.includes('..') || !file.endsWith('.md')) {
+    return Response.json({ ok: false, error: 'Invalid file path' }, { status: 400, headers: CORS });
+  }
+
+  const targetBranch = branch || 'main';
+  const ghBase = `https://api.github.com/repos/visceralcc/${repo}/contents/${file}`;
+  const ghHeaders = {
+    'Authorization': `token ${env.GITHUB_TOKEN}`,
+    'User-Agent': 'cven-worker',
+    'Accept': 'application/vnd.github+json',
+  };
+
+  try {
+    // 1. Read current file to get its sha.
+    const getRes = await fetch(`${ghBase}?ref=${encodeURIComponent(targetBranch)}`, { headers: ghHeaders });
+    if (!getRes.ok) {
+      const text = await getRes.text();
+      console.error('[project-file] GET failed', getRes.status, text);
+      return Response.json({ ok: false, error: `GitHub GET ${getRes.status}` }, { status: 502, headers: CORS });
+    }
+    const fileData = await getRes.json();
+    if (!fileData.sha) {
+      console.error('[project-file] missing sha', fileData);
+      return Response.json({ ok: false, error: 'Unexpected file metadata from GitHub' }, { status: 502, headers: CORS });
+    }
+
+    // 2. PUT the new content with the sha.
+    const message = commitMessage || `update ${file}`;
+    const putRes = await fetch(ghBase, {
+      method: 'PUT',
+      headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        content: base64EncodeUtf8(content),
+        sha: fileData.sha,
+        branch: targetBranch,
+      }),
+    });
+
+    if (!putRes.ok) {
+      const text = await putRes.text();
+      console.error('[project-file] PUT failed', putRes.status, text);
+      return Response.json({ ok: false, error: `GitHub PUT ${putRes.status}` }, { status: 502, headers: CORS });
+    }
+
+    const putData = await putRes.json();
+    return Response.json({
+      ok: true,
+      repo,
+      file,
+      branch: targetBranch,
+      sha: putData.content?.sha || null,
+      commit: putData.commit?.sha || null,
+    }, { headers: CORS });
+  } catch (err) {
+    console.error('[project-file] error', err);
     return Response.json({ ok: false, error: err.message }, { status: 500, headers: CORS });
   }
 }
