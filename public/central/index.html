@@ -428,10 +428,184 @@
     display: block;
   }
 
+  .backlog-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
   .backlog-tabs {
     display: flex;
     gap: 6px;
-    margin-bottom: 14px;
+  }
+
+  .backlog-add-btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-mid);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .backlog-add-btn:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 18, 25, 0.42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 480px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    box-shadow: 0 18px 48px -12px rgba(15, 18, 25, 0.25);
+  }
+
+  .modal-title {
+    font-family: var(--condensed);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .modal-label {
+    font-family: var(--condensed);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .modal-select,
+  .modal-input,
+  .modal-textarea {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    width: 100%;
+  }
+
+  .modal-textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: var(--sans);
+    line-height: 1.4;
+  }
+
+  .modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .modal-tag {
+    font-family: var(--condensed);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-mid);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+
+  .modal-tag:hover {
+    border-color: var(--text-muted);
+  }
+
+  .modal-tag.selected {
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .modal-btn {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .modal-btn:hover:not(:disabled) {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+
+  .modal-btn.primary {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--surface);
+  }
+
+  .modal-btn.primary:hover:not(:disabled) {
+    border-color: var(--text);
+    color: var(--surface);
+    opacity: 0.88;
+  }
+
+  .modal-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .modal-error {
+    font-size: 13px;
+    color: #e74c3c;
+    line-height: 1.4;
   }
 
   .backlog-tab {
@@ -1197,12 +1371,21 @@ function renderLevelB() {
   const allItems = collectBacklogItems(parsed);
   const outstanding = allItems.filter(i => !i.done);
 
+  const headerRow = el('div', { class: 'backlog-header-row' });
+  if (allItems.length > 0) {
+    headerRow.append(renderBacklogTabs(outstanding.length, allItems.length));
+  } else {
+    headerRow.append(el('div'));
+  }
+  const addBtn = el('button', { class: 'backlog-add-btn', type: 'button' }, '+ Add Item');
+  addBtn.addEventListener('click', () => openAddItemModal(parsed));
+  headerRow.append(addBtn);
+  panel.append(headerRow);
+
   if (allItems.length === 0) {
     panel.append(el('div', { class: 'panel-empty' }, 'Backlog is empty.'));
     return;
   }
-
-  panel.append(renderBacklogTabs(outstanding.length, allItems.length));
 
   if (backlogTab === 'outstanding') {
     panel.append(renderBacklogOutstanding(outstanding));
@@ -1218,6 +1401,228 @@ function renderLevelB() {
   for (const section of parsed.sections) {
     panel.append(renderBacklogSection(section));
   }
+}
+
+// ─── Add Item modal ──────────────────────────────────────────────────
+
+const COMMON_TAGS = ['bug', 'figma', 'engine', 'carry'];
+
+function openAddItemModal(parsed) {
+  const project = PROJECTS.find(p => p.repo === selectedRepo);
+  if (!project) return;
+
+  const sections = parsed?.sections || [];
+  const selectedTags = new Set();
+
+  const overlay = el('div', { class: 'modal-overlay' });
+  const modal = el('div', { class: 'modal' });
+
+  modal.append(el('div', { class: 'modal-title' }, `Add Item — ${project.name}`));
+
+  // SECTION
+  const sectionField = el('div', { class: 'modal-field' });
+  sectionField.append(el('label', { class: 'modal-label' }, 'Section'));
+  const sectionSelect = document.createElement('select');
+  sectionSelect.className = 'modal-select';
+  for (const s of sections) {
+    const opt = document.createElement('option');
+    opt.value = s.title;
+    opt.textContent = s.title;
+    sectionSelect.append(opt);
+  }
+  const newSecOpt = document.createElement('option');
+  newSecOpt.value = '__new__';
+  newSecOpt.textContent = '+ New section…';
+  sectionSelect.append(newSecOpt);
+  if (sections.length === 0) sectionSelect.value = '__new__';
+  sectionField.append(sectionSelect);
+  const sectionInput = document.createElement('input');
+  sectionInput.className = 'modal-input';
+  sectionInput.type = 'text';
+  sectionInput.placeholder = 'New section name';
+  sectionInput.style.display = sections.length === 0 ? '' : 'none';
+  sectionField.append(sectionInput);
+  modal.append(sectionField);
+
+  // SUBSECTION
+  const subField = el('div', { class: 'modal-field' });
+  subField.append(el('label', { class: 'modal-label' }, 'Subsection (optional)'));
+  const subSelect = document.createElement('select');
+  subSelect.className = 'modal-select';
+  subField.append(subSelect);
+  const subInput = document.createElement('input');
+  subInput.className = 'modal-input';
+  subInput.type = 'text';
+  subInput.placeholder = 'New subsection name';
+  subInput.style.display = 'none';
+  subField.append(subInput);
+  modal.append(subField);
+
+  function refreshSubsections() {
+    subSelect.innerHTML = '';
+    const noneOpt = document.createElement('option');
+    noneOpt.value = '';
+    noneOpt.textContent = '(none)';
+    subSelect.append(noneOpt);
+    if (sectionSelect.value !== '__new__') {
+      const section = sections.find(s => s.title === sectionSelect.value);
+      if (section) {
+        for (const item of section.items) {
+          if (item.subheading) {
+            const opt = document.createElement('option');
+            opt.value = item.title;
+            opt.textContent = item.title;
+            subSelect.append(opt);
+          }
+        }
+      }
+    }
+    const newSubOpt = document.createElement('option');
+    newSubOpt.value = '__new__';
+    newSubOpt.textContent = '+ New subsection…';
+    subSelect.append(newSubOpt);
+    subInput.style.display = 'none';
+  }
+  refreshSubsections();
+
+  sectionSelect.addEventListener('change', () => {
+    sectionInput.style.display = sectionSelect.value === '__new__' ? '' : 'none';
+    refreshSubsections();
+  });
+  subSelect.addEventListener('change', () => {
+    subInput.style.display = subSelect.value === '__new__' ? '' : 'none';
+  });
+
+  // ITEM DESCRIPTION
+  const descField = el('div', { class: 'modal-field' });
+  descField.append(el('label', { class: 'modal-label' }, 'Item Description'));
+  const descTextarea = document.createElement('textarea');
+  descTextarea.className = 'modal-textarea';
+  descTextarea.placeholder = 'What needs to happen?';
+  descField.append(descTextarea);
+  modal.append(descField);
+
+  // TAGS
+  const tagField = el('div', { class: 'modal-field' });
+  tagField.append(el('label', { class: 'modal-label' }, 'Tags'));
+  const tagRow = el('div', { class: 'modal-tags' });
+  for (const tag of COMMON_TAGS) {
+    const btn = el('button', { class: 'modal-tag', type: 'button' }, tag);
+    btn.addEventListener('click', () => {
+      if (selectedTags.has(tag)) {
+        selectedTags.delete(tag);
+        btn.classList.remove('selected');
+        btn.style.backgroundColor = '';
+      } else {
+        selectedTags.add(tag);
+        btn.classList.add('selected');
+        btn.style.backgroundColor = BACKLOG_TAG_COLORS[tag] || BACKLOG_TAG_DEFAULT;
+      }
+    });
+    tagRow.append(btn);
+  }
+  tagField.append(tagRow);
+  modal.append(tagField);
+
+  // ERROR
+  const errBox = el('div', { class: 'modal-error' });
+  errBox.style.display = 'none';
+  modal.append(errBox);
+
+  // ACTIONS
+  const actions = el('div', { class: 'modal-actions' });
+  const cancelBtn = el('button', { class: 'modal-btn', type: 'button' }, 'Cancel');
+  const submitBtn = el('button', { class: 'modal-btn primary', type: 'button' }, 'Add Item');
+  actions.append(cancelBtn, submitBtn);
+  modal.append(actions);
+
+  function close() {
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+  cancelBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+  document.addEventListener('keydown', onKey);
+
+  async function submit() {
+    const sectionTitle = sectionSelect.value === '__new__'
+      ? sectionInput.value.trim()
+      : sectionSelect.value;
+    const subsectionTitle = subSelect.value === '__new__'
+      ? subInput.value.trim()
+      : subSelect.value;
+    const desc = descTextarea.value.trim();
+
+    if (!sectionTitle) {
+      errBox.textContent = 'Section is required.';
+      errBox.style.display = '';
+      return;
+    }
+    if (!desc) {
+      errBox.textContent = 'Description is required.';
+      errBox.style.display = '';
+      return;
+    }
+
+    const tagSuffix = [...selectedTags].map(t => ` [${t}]`).join('');
+    const itemLine = `- 🔲 **${desc}**${tagSuffix}`;
+    const commitMessage = `backlog: add item to ${sectionTitle}` +
+      (subsectionTitle ? ` / ${subsectionTitle}` : '');
+
+    submitBtn.disabled = true;
+    cancelBtn.disabled = true;
+    submitBtn.textContent = 'Adding…';
+    errBox.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/project-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repo: project.repo,
+          file: 'docs/status/BACKLOG.md',
+          branch: project.branch || 'main',
+          section: sectionTitle,
+          subsection: subsectionTitle || undefined,
+          item: itemLine,
+          commitMessage,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        errBox.textContent = data.error || `Request failed (${res.status})`;
+        errBox.style.display = '';
+        submitBtn.disabled = false;
+        cancelBtn.disabled = false;
+        submitBtn.textContent = 'Add Item';
+        return;
+      }
+      close();
+      // Invalidate and re-fetch the backlog so the new item shows up.
+      if (cache[project.repo]) delete cache[project.repo].backlog;
+      if (project.repo === selectedRepo) renderLevelB();
+      const refreshed = await fetchBacklog(project.repo);
+      if (refreshed.aborted) return;
+      storeBacklog(project.repo, refreshed);
+      if (project.repo === selectedRepo) renderLevelB();
+    } catch (err) {
+      errBox.textContent = err.message;
+      errBox.style.display = '';
+      submitBtn.disabled = false;
+      cancelBtn.disabled = false;
+      submitBtn.textContent = 'Add Item';
+    }
+  }
+  submitBtn.addEventListener('click', submit);
+
+  overlay.append(modal);
+  document.body.append(overlay);
+  setTimeout(() => descTextarea.focus(), 50);
 }
 
 // ─── Tools panel (mobile-only, §7.2) ─────────────────────────────────
