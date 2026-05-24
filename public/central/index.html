@@ -1575,19 +1575,30 @@ async function saveBacklogChanges() {
 
     clearPending(repo);
 
-    if (btn) {
-      btn.classList.remove('saving');
-      btn.classList.add('saved');
-      btn.textContent = 'Saved';
-    }
+    // Update the cached raw content in place so the next render reflects the
+    // new checkbox states immediately. Line indices stay aligned because we
+    // only swap marker characters — no lines added or removed.
+    cache[repo].backlog = { ...result, content: updated };
 
-    // Re-fetch so future toggles map to fresh line indices.
-    delete cache[repo].backlog;
-    const refreshed = await fetchBacklog(repo);
-    if (refreshed.aborted) return;
-    storeBacklog(repo, refreshed);
     if (repo === selectedRepo) {
-      setTimeout(() => renderLevelB(), 700);
+      renderLevelB();
+      const freshBtn = document.getElementById('backlogSaveBtn');
+      if (freshBtn) {
+        freshBtn.classList.remove('hidden');
+        freshBtn.classList.add('saved');
+        freshBtn.textContent = 'Saved';
+        setTimeout(() => {
+          if (freshBtn.classList.contains('saved')) {
+            freshBtn.classList.remove('saved');
+            if (pendingCount(repo) === 0) {
+              freshBtn.classList.add('hidden');
+              freshBtn.textContent = 'Save';
+            } else {
+              freshBtn.textContent = `Save (${pendingCount(repo)})`;
+            }
+          }
+        }, 1200);
+      }
     }
   } catch (err) {
     if (btn) {
