@@ -124,7 +124,8 @@
       font-family: var(--font-body);
       font-style: italic;
       font-weight: 400;
-      font-size: 96px;
+      /* 90px max, scaling down on narrower windows so "like a real-world connection" stays on one line */
+      font-size: min(90px, calc(8.8vw - 6px));
       line-height: 1.1;
       letter-spacing: -0.01em;
       color: var(--text);
@@ -133,6 +134,15 @@
 
     .manifesto p strong {
       font-weight: 700;
+    }
+
+    .manifesto p a {
+      color: #00CCFF;
+      text-decoration: none;
+    }
+
+    .manifesto p a:hover {
+      color: #00ACDC;
     }
 
     .manifesto p:last-child {
@@ -234,7 +244,7 @@
       nav { gap: 2px; }
       nav a { padding: 6px 10px; font-size: 13px; }
       .hero { padding: 80px 20px 60px; }
-      .manifesto p { font-size: 44px; margin-bottom: 56px; }
+      .manifesto p { font-size: min(44px, calc(8.8vw - 6px)); margin-bottom: 56px; }
       .about-content p { font-size: 44px; margin-bottom: 56px; }
       section { padding: 60px 20px; }
       .footer-inner { flex-direction: column; align-items: flex-start; }
@@ -242,8 +252,7 @@
 
     @media (max-width: 480px) {
       nav a { padding: 6px 8px; font-size: 12px; }
-      .manifesto p { font-size: 34px; margin-bottom: 44px; }
-      .about-content p { font-size: 34px; margin-bottom: 44px; }
+      .manifesto p { font-size: min(34px, calc(8.8vw - 6px)); margin-bottom: 44px; }      .about-content p { font-size: 34px; margin-bottom: 44px; }
     }
   </style>
 </head>
@@ -266,11 +275,12 @@
       <section class="hero">
         <div class="manifesto">
           <p>Digital creation now requires seamless integration between human ingenuity and machine intelligence.</p>
-          <p>AI empowers the acceleration of creation, but it doesn’t understand the nuance of human connection…in products or interfaces.</p>
-          <p>Rethinking the tools we use to create isn’t just a good idea…<strong>it’s necessary.</strong></p>
-          <p>The benefit of natural language input and response is that it “feels” like a real-world connection to superintelligence…<strong>but it’s limited by merely being…a machine.</strong></p>
+          <p>AI empowers the acceleration of creation, but it doesn’t understand the nuance of human connection.</p>
+          <p>Rethinking how we digitally create isn’t just a good idea…<strong>it’s necessary.</strong></p>
+          <p>The benefit of natural language input and response is that it “feels”<br><span style="white-space: nowrap;">like a real-world connection</span><br>to superintelligence…<br><strong>but it’s limited by merely being…<br>a machine.</strong></p>
           <p>It doesn’t address how people connect to the process of creation…or create <strong>meaningful products.</strong></p>
           <p>AI doesn’t need to supplant human connection to the digital creation process…but it does require us to turn our approach upside down.</p>
+          <p><a href="mailto:info@cven.cc">Let’s talk about what this means for you…and what <strong>you dream about building.</strong></a></p>
         </div>
       </section>
     </div>
@@ -279,8 +289,8 @@
       <section>
         <div class="about-content">
           <h2><a href="mailto:info@cven.cc" style="color: #00CCFF; text-decoration: none;">info@cven.cc</a></h2>
-          <p>Civil Engine is a design and product studio with nearly two decades shipping interface, identity, print and environment design at the highest level, for clients including Apple, Nike, Pixar, EA and Aston Martin.</p>
-          <p>We believe meaningful creation happens when human ingenuity and machine intelligence work in concert...and that great software still starts with great design. Craft, clarity and respect for the user sit at the center of every decision, whether it’s a consumer app, a creative tool, or something that doesn’t exist yet.</p>
+          <p>Civil Engine is a design and product studio shipping interface, identity, print and environment design at the highest level, for clients including Apple, Nike, Pixar, EA and Aston Martin.</p>
+          <p>We believe meaningful creation happens when human ingenuity and machine intelligence work in concert...and that great products still start with great design. Craft, clarity and respect for the user sit at the center of every decision, whether it’s a consumer app, a creative tool, or something that doesn’t exist yet.</p>
         </div>
       </section>
     </div>
