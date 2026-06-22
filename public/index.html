@@ -192,7 +192,7 @@
     }
 
     .about-content p {
-      font-size: 96px;
+      font-size: 86px;
       color: #000000;
       line-height: 1.1;
       letter-spacing: -0.01em;
@@ -264,7 +264,6 @@
         <img src="/civil-engine-logo.png" alt="Civil Engine">
       </a>
       <nav id="main-nav">
-        <a href="#about" data-page="about">About</a>
       </nav>
     </div>
   </header>
@@ -272,20 +271,6 @@
   <main>
 
     <div id="page-home" class="page active">
-      <section class="hero">
-        <div class="manifesto">
-          <p>Digital creation now requires seamless integration between human ingenuity and machine intelligence.</p>
-          <p>AI empowers the acceleration of creation, but it doesn’t understand the nuance of human connection.</p>
-          <p>Rethinking how we digitally create isn’t just a good idea…<strong>it’s necessary.</strong></p>
-          <p>The benefit of natural language input and response is that it “feels”<br><span style="white-space: nowrap;">like a real-world connection</span><br>to superintelligence…<br><strong>but it’s limited by merely being… a machine.</strong></p>
-          <p>It doesn’t address how people connect to the process of creation…or create <strong>meaningful products.</strong></p>
-          <p>AI doesn’t need to supplant human connection to the digital creation process…but it does require us to <strong>turn our approach upside down</strong>.</p>
-          <p><a href="mailto:info@cven.cc">Let’s talk about what this means for you…and what <strong>you dream about building.</strong></a></p>
-        </div>
-      </section>
-    </div>
-
-    <div id="page-about" class="page">
       <section>
         <div class="about-content">
           <h2><a href="mailto:info@cven.cc" style="color: #00CCFF; text-decoration: none;">info@cven.cc</a></h2>
@@ -324,8 +309,7 @@
       if (navLink) navLink.classList.add('active');
 
       const titles = {
-        home: 'Civil Engine LLC',
-        about: 'About | Civil Engine'
+        home: 'Civil Engine LLC'
       };
       document.title = titles[page] || 'Civil Engine LLC';
     }
