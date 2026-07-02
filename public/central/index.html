@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Civil Engine · Central</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@300;500;600&display=swap" rel="stylesheet" />
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #fff; }
+  .ce-scroll::-webkit-scrollbar { width: 8px; }
+  .ce-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 8px; }
+  .ce-scroll::-webkit-scrollbar-track { background: transparent; }
+  .ce-note:focus { outline: 2px solid #00c8ff; outline-offset: 2px; }
+  @media (max-width: 900px) {
+    .ce-grid { grid-template-columns: 1fr !important; }
+    .ce-shell { flex-direction: column !important; }
+    .ce-rail { flex-direction: row !important; flex-wrap: wrap !important; width: 100% !important; }
+    .ce-rail button { flex: 1 1 auto; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const CYAN = "#00c8ff";
+const TEXT = "#5a5a5a";
+const INK = "#060606";
+const CARD_SHADOW = "0px 2px 8px 1px rgba(0,0,0,0.25)";
+const BTN_SHADOW = "0px 2px 6px 0px rgba(0,0,0,0.25)";
+const COND = "'Barlow Condensed', 'Arial Narrow', sans-serif";
+const BODY = "'Barlow', system-ui, sans-serif";
+
+const IconRefresh = ({ spin }) => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={spin ? { animation: "cespin 900ms linear infinite" } : null}>
+    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" /><path d="M3 21v-5h5" />
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+);
+const IconCircle = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /></svg>
+);
+
+function ago(iso) {
+  if (!iso) return null;
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+}
+
+function Card({ title, meta, children }) {
+  return (
+    <section style={{ background: "#ffffff", borderRadius: 4, boxShadow: CARD_SHADOW, padding: "22px 24px 24px", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <h2 style={{ margin: 0, fontFamily: COND, fontWeight: 500, fontSize: 24, color: TEXT, letterSpacing: 0.4 }}>{title}</h2>
+        {meta}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+    </section>
+  );
+}
+
+function ListRow({ children, onClick, interactive }) {
+  return (
+    <div onClick={onClick} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontFamily: BODY, fontWeight: 500, fontSize: 13, lineHeight: 1.5, color: TEXT, cursor: interactive ? "pointer" : "default", userSelect: interactive ? "none" : "auto" }}>
+      {children}
+    </div>
+  );
+}
+
+function Empty({ text }) {
+  return <div style={{ fontFamily: BODY, fontSize: 12, color: "#b8b8b8", fontStyle: "italic" }}>{text}</div>;
+}
+
+function SyncMeta({ synced }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: BODY, fontSize: 11, color: "#b0b0b0" }}>
+      <IconRefresh />{synced}
+    </span>
+  );
+}
+
+function App() {
+  const [projects, setProjects] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [activeId, setActiveId] = useState(null);
+  const [done, setDone] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [notes, setNotes] = useState({});
+  const [noteState, setNoteState] = useState("idle");
+  const noteCache = useRef({});
+  const saveTimer = useRef(null);
+
+  const loadStatus = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const r = await fetch("/api/central/status", { cache: "no-store" });
+      if (!r.ok) throw new Error("status " + r.status);
+      const data = await r.json();
+      setProjects(data.projects);
+      setLoadError(null);
+      setActiveId((cur) => cur || (data.projects[0] && data.projects[0].id));
+    } catch (e) {
+      setLoadError(e.message || "Couldn't reach the status endpoint.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { loadStatus(); }, [loadStatus]);
+
+  useEffect(() => {
+    if (!activeId) return;
+    if (noteCache.current[activeId] !== undefined) {
+      setNotes((n) => ({ ...n, [activeId]: noteCache.current[activeId] }));
+      return;
+    }
+    fetch("/api/central/notes?project=" + encodeURIComponent(activeId))
+      .then((r) => (r.ok ? r.json() : { notes: "" }))
+      .then((d) => {
+        noteCache.current[activeId] = d.notes || "";
+        setNotes((n) => ({ ...n, [activeId]: d.notes || "" }));
+      })
+      .catch(() => {});
+  }, [activeId]);
+
+  const onNoteChange = (val) => {
+    setNotes((n) => ({ ...n, [activeId]: val }));
+    noteCache.current[activeId] = val;
+    setNoteState("saving");
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await fetch("/api/central/notes", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project: activeId, notes: val }),
+        });
+        setNoteState("saved");
+        setTimeout(() => setNoteState("idle"), 1200);
+      } catch { setNoteState("idle"); }
+    }, 700);
+  };
+
+  const toggleDone = (key) => setDone((d) => ({ ...d, [key]: !d[key] }));
+  const active = projects && projects.find((p) => p.id === activeId);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #ffffff 0%, #ffffff 30%, #999999 100%)", fontFamily: BODY }}>
+      <style>{`@keyframes cespin { to { transform: rotate(360deg); } }`}</style>
+
+      <header style={{ padding: "28px 40px 8px", display: "flex", alignItems: "baseline", gap: 10 }}>
+        <span style={{ fontFamily: COND, fontWeight: 600, fontSize: 32, color: CYAN, letterSpacing: 0.3 }}>CIVIL ENGINE</span>
+        <span style={{ fontFamily: COND, fontWeight: 300, fontSize: 32, color: INK, letterSpacing: 0.3 }}>CENTRAL</span>
+        <button onClick={loadStatus} title="Refresh from GitHub"
+          style={{ marginLeft: 8, alignSelf: "center", border: "none", background: "transparent", color: "#9a9a9a", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: BODY, fontSize: 12 }}>
+          <IconRefresh spin={refreshing} /> {refreshing ? "Syncing" : "Refresh"}
+        </button>
+      </header>
+
+      {loadError && (
+        <div style={{ margin: "8px 40px", padding: "12px 16px", background: "#fff", borderRadius: 4, boxShadow: CARD_SHADOW, fontFamily: BODY, fontSize: 13, color: "#b4513f" }}>
+          Couldn't load project status ({loadError}). Check that GITHUB_TOKEN is set and the repos in central.js are correct, then Refresh.
+        </div>
+      )}
+
+      <div className="ce-shell" style={{ display: "flex", gap: 20, padding: "16px 40px 48px", alignItems: "flex-start" }}>
+        <nav className="ce-rail" style={{ display: "flex", flexDirection: "column", gap: 6, width: 173, flexShrink: 0 }}>
+          {!projects && <Empty text="Loading projects…" />}
+          {projects && projects.map((p) => {
+            const on = p.id === activeId;
+            return (
+              <button key={p.id} onClick={() => setActiveId(p.id)} style={{
+                height: 52, display: "flex", alignItems: "center", padding: "10px 10px 10px 16px",
+                borderRadius: 4, border: "none", cursor: "pointer",
+                background: on ? CYAN : "#ffffff", color: on ? "#ffffff" : TEXT,
+                boxShadow: BTN_SHADOW, fontFamily: COND, fontWeight: 500, fontSize: 18, letterSpacing: 0.4,
+                transition: "background 120ms ease, color 120ms ease",
+              }}>
+                {p.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="ce-grid" style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, alignItems: "start" }}>
+          <Card title="NEXT STEPS" meta={active && active.updated ? <SyncMeta synced={ago(active.updated)} /> : null}>
+            {!active && <Empty text="—" />}
+            {active && active.error && <Empty text={"Couldn't read BUILD_STATUS.md — " + active.error} />}
+            {active && !active.error && active.nextSteps.length === 0 && <Empty text="No “Next Steps” section found." />}
+            {active && !active.error && active.nextSteps.map((s, i) => {
+              const key = active.id + ":ns:" + i;
+              const checked = !!done[key];
+              return (
+                <ListRow key={key} onClick={() => toggleDone(key)} interactive>
+                  <span style={{ marginTop: 1, color: checked ? CYAN : "#c4c4c4", flexShrink: 0, display: "inline-flex" }}>
+                    {checked ? <IconCheck /> : <IconCircle />}
+                  </span>
+                  <span style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.5 : 1 }}>{s}</span>
+                </ListRow>
+              );
+            })}
+          </Card>
+
+          <Card title="BACKLOG" meta={active && active.updated ? <SyncMeta synced={ago(active.updated)} /> : null}>
+            {!active && <Empty text="—" />}
+            {active && !active.error && active.backlog.length === 0 && <Empty text="No “Backlog” section found." />}
+            {active && !active.error && active.backlog.map((s, i) => (
+              <ListRow key={i}>
+                <span style={{ marginTop: 6, width: 4, height: 4, borderRadius: 4, background: "#c4c4c4", flexShrink: 0 }} />
+                <span>{s}</span>
+              </ListRow>
+            ))}
+          </Card>
+
+          <Card title="NOTES" meta={
+            <span style={{ fontFamily: BODY, fontSize: 11, color: noteState === "saved" ? CYAN : "#b0b0b0", transition: "color 200ms" }}>
+              {noteState === "saving" ? "Saving…" : noteState === "saved" ? "Saved" : "Editable"}
+            </span>
+          }>
+            {!active && <Empty text="—" />}
+            {active && (
+              <textarea className="ce-note ce-scroll" value={notes[activeId] || ""} onChange={(e) => onNoteChange(e.target.value)}
+                placeholder="Scratchpad for this project — decisions, blockers, half-thoughts. Saved per project."
+                style={{ width: "100%", minHeight: 240, resize: "vertical", border: "none", background: "transparent", fontFamily: BODY, fontWeight: 500, fontSize: 13, lineHeight: 1.55, color: TEXT }} />
+            )}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

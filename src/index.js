@@ -1,3 +1,5 @@
+import { handleCentral } from './central.js';
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -8,6 +10,10 @@ export default {
 
     if (url.pathname === '/api/contact') {
       return handleContact(request, env);
+    }
+
+    if (url.pathname.startsWith('/api/central/')) {
+      return handleCentral(request, env, ctx);
     }
 
     return env.ASSETS.fetch(request);

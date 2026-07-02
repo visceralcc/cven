@@ -10,5 +10,11 @@
 		{
 			"name": "EMAIL"
 		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "CENTRAL_NOTES",
+			"id": "aa8655ca553f41579245ca50e92d4307"
+		}
 	]
 }
